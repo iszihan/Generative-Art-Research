@@ -1,5 +1,7 @@
 from keras.models import Sequential
 from keras.layers import Convolution2D, MaxPooling2D, Flatten, Dense, Dropout
+import keras.backend as K
+from random import *
 from keras.layers.advanced_activations import LeakyReLU
 
 def original(input_dim):
@@ -131,6 +133,27 @@ def more_conv(input_dim):
     return model
 
 def more_conv_multiple(input_dim, n_parameters):
+
+    def get_customLoss():
+        ind = randint(0,2)
+        if ind==1:
+            def customLoss(y_true,y_pred):
+                y_true_n = y_true[:,0:1]
+                y_pred_n = y_pred[:,0:1]
+                return K.mean(K.square(y_pred_n-y_true_n), axis=-1)
+            return customLoss
+        elif ind==2:
+            def customLoss(y_true,y_pred):
+                y_true_n = y_true[:,1:2]
+                y_pred_n = y_pred[:,1:2]
+                return K.mean(K.square(y_pred_n-y_true_n), axis=-1)
+            return customLoss
+        elif ind==0:
+            def customLoss(y_true,y_pred):
+                return K.mean(K.square(y_pred- y_true), axis=-1)
+            return customLoss
+
+        
     model = Sequential()
     model.add(Convolution2D(8, (9, 9), padding='same', strides=(2, 2), input_shape=(input_dim, input_dim, 1)))
     model.add(LeakyReLU(alpha=0.3))
@@ -160,9 +183,8 @@ def more_conv_multiple(input_dim, n_parameters):
     model.add(Dropout(0.1))
 
     model.add(Dense(n_parameters, activation='linear'))
-
-    model.compile(loss='mse', optimizer='adam')
-
+    
+    model.compile(loss=get_customLoss(),optimizer='adam')
     return model
 
 def more_conv2(input_dim):
