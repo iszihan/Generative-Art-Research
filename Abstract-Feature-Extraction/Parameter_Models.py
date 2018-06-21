@@ -3,6 +3,7 @@ from keras.layers import Convolution2D, MaxPooling2D, Flatten, Dense, Dropout
 import keras.backend as K
 from random import *
 from keras.layers.advanced_activations import LeakyReLU
+import tensorflow as tf
 
 def original(input_dim):
     model = Sequential()
@@ -135,23 +136,12 @@ def more_conv(input_dim):
 def more_conv_multiple(input_dim, n_parameters):
 
     def get_customLoss():
-        ind = randint(0,2)
-        if ind==1:
-            def customLoss(y_true,y_pred):
-                y_true_n = y_true[:,0:1]
-                y_pred_n = y_pred[:,0:1]
-                return K.mean(K.square(y_pred_n-y_true_n), axis=-1)
-            return customLoss
-        elif ind==2:
-            def customLoss(y_true,y_pred):
-                y_true_n = y_true[:,1:2]
-                y_pred_n = y_pred[:,1:2]
-                return K.mean(K.square(y_pred_n-y_true_n), axis=-1)
-            return customLoss
-        elif ind==0:
-            def customLoss(y_true,y_pred):
-                return K.mean(K.square(y_pred- y_true), axis=-1)
-            return customLoss
+        def customLoss(y_true,y_pred):
+            y_zeros = y_pred-y_pred
+            y_true_temp = K.switch(tf.is_nan(y_true),y_zeros,y_true)
+            y_pred_temp = K.switch(tf.is_nan(y_true),y_zeros,y_pred)
+            return K.mean(K.square(y_pred_temp - y_true_temp), axis=-1)
+        return customLoss
 
         
     model = Sequential()

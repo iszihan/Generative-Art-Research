@@ -16,6 +16,7 @@ Run the python file Parameters.py like this:
  - **EPOCHS (-e):** The number of epochs to train on the data
  - **IMAGE_TYPES (-t):** Types of images to train on
  - **PARAMETER_MAP (-t):** Mapping of parameters used to equate them for training. A dictionary of one letter strings.
+ 
 
 
 ## How to Predict

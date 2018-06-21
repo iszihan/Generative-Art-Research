@@ -27,6 +27,8 @@ def main():
 	parser.add_argument('-n', '--run_id', action='store', dest='run_id', help='Name for operation. Supplying a name will create a new results folder with that name', default=None)
 	parser.add_argument('-e', '--epochs', action='store', dest='n_epochs', type=int, help='Number of epochs to use for training and traintest operations', default=1)
 	parser.add_argument('-m', '--parameter_map', action='store', dest='parameter_map', help='Map one parameter to another with a dictionary', default='{}')
+	parser.add_argument('-p', '--number_parameter', action='store', dest='n_param', type=int, help='Number of parameters to train', default='{}')
+
 
 	args = parser.parse_args()
 
@@ -39,7 +41,7 @@ def main():
 		if hasattr(args, 'image_types'):
 			model.set_image_types(args.image_types)
 		print('Directories to load from:', ast.literal_eval(args.directories))
-		model.train_operation(ast.literal_eval(args.directories), args.n_epochs, args.image_types, ast.literal_eval(args.parameter_map))
+		model.train_operation(ast.literal_eval(args.directories), args.n_epochs, args.image_types, ast.literal_eval(args.parameter_map), args.n_param)
 
 	elif args.operation == 'test':
 		print('Test Operation')
@@ -55,7 +57,6 @@ def main():
 	elif args.operation == 'info':
 		pass
 
-	plt.show()
 
 
 class ParameterModel:
@@ -92,6 +93,7 @@ class ParameterModel:
 	trained_image_types = []  # A list of the first three identifier letters at the beginning of the image files to only train on those types
 	trained_parameters = None
 	n_trained_parameters = 1
+	indicator = 0
 	loaded_model = None
 	trained_epochs = 0
 
@@ -124,11 +126,12 @@ class ParameterModel:
 			print('Results in directory:', self.results_dir)
 
 
-	def train_operation(self, image_dirs, epochs, image_types, parameter_map):
+	def train_operation(self, image_dirs, epochs, image_types, parameter_map, n_param):
 		# Loads and trains on data and saves/shows result data and plots
 
 		print('Loading Data')
-		self.load_train_and_test_data(image_dirs, image_types, parameter_map)
+		self.load_train_and_test_data(image_dirs, image_types, parameter_map, n_param)
+		print()
 
 		if self.model is None:
 			print('Creating Model')
@@ -191,8 +194,10 @@ class ParameterModel:
 		self.results_dir = results_dir
 
 
-	def load_train_and_test_data(self, image_dirs, image_types, parameter_map):
-		x, y = self.load_data(image_dirs, image_types, parameter_map, True)
+	def load_train_and_test_data(self, image_dirs, image_types, parameter_map,n_param):
+		x, y = self.load_data(image_dirs, image_types, parameter_map, True, n_param)
+		print(y[0:30, :])
+		print(y[10000:10030,:])
 
 		test_split = int(x.shape[0] * 0.8)
 
@@ -211,7 +216,7 @@ class ParameterModel:
 
 		self.x_test = x
 
-	def load_data(self, image_dirs, image_types, parameter_map, load_y):  # TODO: Add support for loading images from multiple directories
+	def load_data(self, image_dirs, image_types, parameter_map, load_y, n_param):  # TODO: Add support for loading images from multiple directories
 		"""
 		Gets x and y values for images with types matching values in image_types in the specified directories.
 		Maps parameters
@@ -227,7 +232,7 @@ class ParameterModel:
 		for image_dir in image_dirs:  # Get image names from all provided directories
 			image_names += [os.path.join(os.path.basename(os.path.dirname(image_dir)), name) for name in os.listdir(image_dir)]  # Add the name of the folder the image is from to every image name
 		np.random.shuffle(image_names)
-		
+
 		image_dir_dir = os.path.dirname(os.path.dirname(image_dirs[0]))  # The directory that holds all of the image directories. This assumes all of the directories live in a common folder.
 		self.get_image_dim(os.path.join(image_dir_dir, image_names[1]))
 
@@ -243,8 +248,8 @@ class ParameterModel:
 		if not load_y:  # For unlabeled data, the function should return before it tries to gather labels
 			return x
 
-		n_image_parameters = image_names[0].count('-') - 1
-		y = np.ones(shape=(n_names, n_image_parameters), dtype=np.float32) * -100  # Initialize the array to the middle value in case some file names are missing data
+		self.n_trained_parameters = n_param
+		y = np.full((n_names, self.n_trained_parameters),np.nan) # Initialize the array to nan to mask the missing data
 
 		temp_image_names = list(image_names)  # Duplicate list so the original names aren't changed in case they need to be used
 
@@ -255,21 +260,43 @@ class ParameterModel:
 					temp_image_names[i] = temp_image_names[i].replace('-' + letter, '-' + parameter_map[letter])
 		self.trained_parameter_map = parameter_map
 
-		parameter_indexes = [m.start() + 1 for m in re.finditer('-', temp_image_names[0])][0:-1]  # Don't use the last '-' in the name. It's before the last number, not a parameter
-		self.trained_parameters = [temp_image_names[0][i] for i in parameter_indexes]  # Get the parameters from the first image. Assumes all images have consistent parameters
-		self.n_trained_parameters = len(self.trained_parameters)
+
+		#parameter_indexes = [m.start() + 1 for m in re.finditer('-', temp_image_names[0])][0:-1]  # Don't use the last '-' in the name. It's before the last number, not a parameter
+		#self.trained_parameters = [temp_image_names[0][i] for i in parameter_indexes]  # Get the parameters from the first image. Assumes all images have consistent parameters
+		#self.n_trained_parameters = len(self.trained_parameters)
 
 		# Build y values
-		for i_name in range(len(temp_image_names)):
-			for i_letter in range(len(self.trained_parameters)):
-				letter = self.trained_parameters[i_letter]
-				index_in_name = temp_image_names[i_name].find('-' + letter)
-				if index_in_name == -1:
-					# print(image_names[i_name], 'is missing the', letter, 'parameter')
-					continue
 
-				value = temp_image_names[i_name][index_in_name + 2:index_in_name + 4]
-				y[i_name, i_letter] = value
+		for i_name in range(len(temp_image_names)):
+			parameter_indexes = [m.start() + 1 for m in re.finditer('-', temp_image_names[i_name])][0:-1]
+			temp_trained_parameters = [temp_image_names[i_name][i] for i in parameter_indexes]
+			temp_n_parameters = len(temp_trained_parameters)
+			if temp_n_parameters == self.n_trained_parameters:
+				self.trained_parameters = temp_trained_parameters #get all the parameters from the image with all labels
+				break
+
+		for i_name in range(len(temp_image_names)):
+			parameter_indexes = [m.start() + 1 for m in re.finditer('-', temp_image_names[i_name])][0:-1]
+			temp_trained_parameters = [temp_image_names[i_name][i] for i in parameter_indexes]
+			temp_n_parameters = len(temp_trained_parameters)
+			for i_letter in range(self.n_trained_parameters):
+				if temp_n_parameters == self.n_trained_parameters:
+					letter = temp_trained_parameters[i_letter]
+					index_in_name = temp_image_names[i_name].find('-' + letter)
+					if index_in_name == -1:
+						#print(image_names[i_name], 'is missing the', letter, 'parameter')
+						continue
+					value = temp_image_names[i_name][index_in_name + 2:index_in_name + 4]
+					y[i_name, i_letter] = value
+				elif temp_n_parameters == 1:
+					cur_letter = self.trained_parameters[i_letter]
+					letter = temp_trained_parameters[0]
+					if letter == cur_letter:
+						index_in_name = temp_image_names[i_name].find('-' + letter)
+						value = temp_image_names[i_name][index_in_name + 2:index_in_name + 4]
+						y[i_name, i_letter] = value
+
+
 
 		# # FIND IMAGE NAMES THAT AREN'T GIVING VALUES
 		# for i in range(len(temp_image_names)):
@@ -318,7 +345,7 @@ class ParameterModel:
 			summary_file.write('\n')
 
 			self.model.summary(print_fn=lambda x: summary_file.write(x + '\n'))
-			
+
 			# plot_model(self.model, to_file=os.path.join(self.results_dir, 'Model Plot.png'), show_shapes=True, show_layer_names=True)
 
 	def save_model_and_params(self):
