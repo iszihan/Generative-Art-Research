@@ -133,17 +133,28 @@ def more_conv(input_dim):
 
     return model
 
+def get_customLoss():
+    def customLoss(y_true,y_pred):
+        y_zeros = y_pred-y_pred
+        y_true_temp = K.switch(tf.is_nan(y_true),y_zeros,y_true)
+        y_pred_temp = K.switch(tf.is_nan(y_true),y_zeros,y_pred)
+        #to find the number of available datapoints
+        num = 600-tf.reduce_sum(tf.cast(tf.is_nan(y_true), tf.float32))
+        return K.sum(K.square(y_pred_temp - y_true_temp),axis=None)/num
+    return customLoss
+
 def more_conv_multiple(input_dim, n_parameters):
 
-    def get_customLoss():
-        def customLoss(y_true,y_pred):
-            y_zeros = y_pred-y_pred
-            y_true_temp = K.switch(tf.is_nan(y_true),y_zeros,y_true)
-            y_pred_temp = K.switch(tf.is_nan(y_true),y_zeros,y_pred)
-            return K.mean(K.square(y_pred_temp - y_true_temp), axis=-1)
-        return customLoss
+    # def get_customLoss():
+    #     def customLoss(y_true,y_pred):
+    #         y_zeros = y_pred-y_pred
+    #         y_true_temp = K.switch(tf.is_nan(y_true),y_zeros,y_true)
+    #         y_pred_temp = K.switch(tf.is_nan(y_true),y_zeros,y_pred)
+    #         #to find the number of available datapoints
+    #         num = 600-tf.reduce_sum(tf.cast(tf.is_nan(y_true), tf.float32))
+    #         return K.sum(K.square(y_pred_temp - y_true_temp),axis=None)/num
+    #     return customLoss
 
-        
     model = Sequential()
     model.add(Convolution2D(8, (9, 9), padding='same', strides=(2, 2), input_shape=(input_dim, input_dim, 1)))
     model.add(LeakyReLU(alpha=0.3))
@@ -173,7 +184,7 @@ def more_conv_multiple(input_dim, n_parameters):
     model.add(Dropout(0.1))
 
     model.add(Dense(n_parameters, activation='linear'))
-    
+
     model.compile(loss=get_customLoss(),optimizer='adam')
     return model
 

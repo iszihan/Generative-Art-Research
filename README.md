@@ -8,15 +8,16 @@ Neural networks to extract mid-level such as roundness, or messiness from images
 ## How to Train on an Image Set
 Run the python file Parameters.py like this:
 
-    python3 Parameters.py train IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -e EPOCHS -t IMAGE_TYPES -m PARAMETER_MAP
+    python3 Parameters.py train IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -e EPOCHS -t IMAGE_TYPES -m PARAMETER -p N_PARAM
+    EXAMPLE: python3 Parameters.py train "['Images/MessyRoundRects/','Images/Noise/']" -l Models/Trial1 -n Results -e 300 -t tri -m "['r','m']" -p 2
 
  - **IMAGE_DIR (required):** The directory to load the images from
  - **MODEL_TO_LOAD (-l):** If this field is specified, the program will look in the folder provided and start the training with the model loaded from there.
  - **RUN_ID (-n):** The results will be saved in a folder with this name. If this is not specified, a name will be created based on other information.
  - **EPOCHS (-e):** The number of epochs to train on the data
  - **IMAGE_TYPES (-t):** Types of images to train on
- - **PARAMETER_MAP (-t):** Mapping of parameters used to equate them for training. A dictionary of one letter strings.
- 
+ - **PARAMETER (-m):** Parameters for training
+ - **N_PARAM (-p):** Number of Parameters for training 
 
 
 ## How to Predict
