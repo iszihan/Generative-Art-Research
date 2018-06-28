@@ -1,3 +1,7 @@
+from keras.applications.vgg19 import VGG19
+from keras.preprocessing import image
+from keras.applications.vgg19 import preprocess_input
+from keras.models import Model
 from keras.models import Sequential
 from keras.layers import Convolution2D, MaxPooling2D, Flatten, Dense, Dropout
 import keras.backend as K
@@ -187,6 +191,45 @@ def more_conv_multiple(input_dim, n_parameters):
 
     model.compile(loss=get_customLoss(),optimizer='adam')
     return model
+
+
+def vgg19_custom(n_parameters):
+
+    base_model = VGG19(weights='imagenet', include_top=False, input_shape=(224,224,3))
+
+
+    x = base_model.output
+    # let's add a fully-connected layer
+    x = Flatten()(x)
+    x = Dropout(0.4)(x)
+
+    x = Dense(128, activation='relu')(x)
+    x = LeakyReLU(alpha=0.3)(x)
+    x = Dropout(0.3)(x)
+
+    x = Dense(32)(x)
+    x = LeakyReLU(alpha=0.3)(x)
+    x = Dropout(0.1)(x)
+    # and a logistic layer -- let's say we have 200 classes
+    predictions = Dense(n_parameters, activation='linear')(x)
+    model = Model(inputs=base_model.input, outputs=predictions)
+
+    for layer in base_model.layers:
+        layer.trainable = False
+    # model.add(Dense(128, activation='relu'))
+    # model.add(LeakyReLU(alpha=0.3))
+    # model.add(Dropout(0.3))
+    #
+    # model.add(Dense(32))
+    # model.add(LeakyReLU(alpha=0.3))
+    # model.add(Dropout(0.1))
+    #
+    # model.add(Dense(n_parameters, activation='linear'))
+
+    model.compile(loss=get_customLoss(),optimizer='adam')
+    return model
+
+
 
 def more_conv2(input_dim):
     model = Sequential()

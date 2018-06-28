@@ -36,7 +36,7 @@ void draw() {
       cnt++;
       print(cnt + "\n");
       String fname = String.format("Output/rmr-r%02d-m%02d-%03d.png", round, messy, cnt % 1000);
-      //save(fname);
+      save(fname);
     }
   }
   stop();

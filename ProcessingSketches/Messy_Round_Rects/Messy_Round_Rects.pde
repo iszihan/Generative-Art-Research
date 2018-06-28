@@ -1,16 +1,19 @@
 int cnt = 0;
-
+float back_col;
 void setup() {
-  size(200, 200);
+  size(224, 224);
   frameRate(99999999);
 }
 
 void randrect(float rad) {  
   float r = random(180);
+  while ( r == back_col){
+    r = random(180);
+  }
   stroke(r);
   fill(r);
-  float x = random(0, width);
-  float y = random(0, height);
+  float x = random(0, width-10);
+  float y = random(0, height-10);
   float w = random(width/8, width/3);
   float h = random(height/8, height/3);
   float a = random(PI);
@@ -23,13 +26,14 @@ void randrect(float rad) {
 }
 
 void draw() {
-  for (int round = 0; round < 45; round++) {
-    for (int messy = 0; messy < 45; messy++) {
+  for (int round = 0; round < 100; round++) {
+    for (int messy = 1; messy < 101; messy++) {
       clear();
-      background(random(0, 255));
-  
-      float rad = round / 100.0;
-      for (int i=0; i < Math.round(messy/2); i++) {
+      back_col = random(0, 255);
+      background(back_col);
+      
+      float rad = round / 99.0;
+      for (int i=0; i < Math.round((messy+3)/2); i++) {
         randrect(rad);
       }
       

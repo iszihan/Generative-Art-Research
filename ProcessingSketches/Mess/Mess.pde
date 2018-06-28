@@ -1,9 +1,9 @@
 int count = 0;
 final float mess = 4;
-final int iterations = 20;
+final int iterations = 100;
 
 void setup() {
-  size(200, 200);
+  size(224, 224);
   frameRate(1);
 }
 
@@ -16,42 +16,58 @@ void draw() {
   float rotation;
   float scale;
   int choice;
+  float background_col;
   
   for (int iteration = 0; iteration < iterations; iteration++) {  // Each set of 100 images
-    for (int m = 0; m < 100; m++) {  // Each of the images
+    for (int m = 1; m < 101; m++) {  // Each of the images
       //print(count + "\n");
-      background(random(70, 240));
+      background_col = random(70,240);
+      background(background_col);
       if (count >= 2000) {
         print("Stopping at " + count + " images");
         stop();
       }
       count++;
       scale = 10 + 40 * (m/100);
-      for(int i = 0; i < m * mess + 2; i++) {  // Each primitive drawm
+      for(int i = 0; i < (m-1) * mess + 2; i++) {  // Each primitive drawm
         
-        x = random(0, width);
-        y = random(0, height);
+        x = random(15, width-15);
+        y = random(15, height-15);
         otherX = random(x - 50, x + 50);
+        while (otherX > x-10 && otherX < x+10){
+          otherX = random(x - 50, x + 50);
+        }
         otherY = random(y - 50, y + 50);
+        while (otherY > y-10 && otherY < y+10){
+          otherY = random(y - 50, y + 50);
+        }
         rotation = random(0, TWO_PI);
         
-        if (random(0,1) < (float)m/100.0 - 0.2) {
+        if (m > 20 && random(0,1) < 0.2) {
           noFill();
         }
         else {
-          fill(random(50, 255));
+          float col = random(50,255);
+          while(col > background_col-15 && col < background_col+15 ){
+            col = random(50,255);
+          }
+          fill(col);
         }
         stroke(random(0,150));
         
         pushMatrix();
         rotate((m/100) * random(-PI, PI));
         strokeWeight(1);
-        choice = (int)random(1,7);  // Choice of which 2D primitive to draw
+        choice = (int)random(1,6);  // Choice of which 2D primitive to draw
         //print("\nChoice: " + choice);
         //print("Made it to primitive choice, image #" + count);
         switch(choice) {
           case 1:  // Arc
-            arc(x, y, otherX*0.75, otherY*0.75, random(0, TWO_PI), rotation);
+            float start_rot = random(0,TWO_PI);
+            while(start_rot == rotation){
+              start_rot = random(0,TWO_PI);
+            }
+            arc(x, y, otherX, otherY, start_rot, rotation);
             break;
           case 2:  // Ellipse
             ellipse(x, y, random(5, scale), random(5, scale));
@@ -59,16 +75,13 @@ void draw() {
           case 3:  // Line
             line(x, y, otherX, otherY);
             break;
-          case 4:  // Point
-            point(x, y);
-            break;
-          case 5:  // Quad
+          case 4:  // Quad
             quad(x, y, otherX, otherY, random(x-scale, x+scale), random(y-scale, y+scale), random(x-scale, x+scale), random(y-scale, y+scale));
             break;
-          case 6:  // Rect
+          case 5:  // Rect
             rect(x, y, random(15, scale*1.5), random(15, scale*1.5), random(0, 15));
             break;
-          case 7: // Triangle
+          case 6: // Triangle
             triangle(x, y, otherX, otherY, random(x-30, x+30), random(y-30, y+30));
             break;
           default:
@@ -81,6 +94,7 @@ void draw() {
           point(random(0,width), random(0,height));
         }
       }
+      print("Saving image with complexity %02d and at iteration %03d",m,iteration);
       save(String.format("Output/mes-m%02d-%03d.png", m, iteration));
     }
     print(count);

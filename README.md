@@ -9,10 +9,13 @@ Neural networks to extract mid-level such as roundness, or messiness from images
 Run the python file Parameters.py like this:
 
     python3 Parameters.py train IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -e EPOCHS -t IMAGE_TYPES -m PARAMETER -p N_PARAM
-    EXAMPLE: python3 Parameters.py train "['Images/MessyRoundRects/','Images/Noise/']" -l Models/Trial1 -n Results -e 300 -t tri -m "['r','m']" -p 2
+    EXAMPLE: 
+    Loading existing model: python3 Parameters.py train "['Images/MessyRoundRects/','Images/Noise/']" -l Models/Trial1 -n Results -e 300 -t tri -m "['r','m']" -p 2
+    Creating new model: python3 Parameters.py train "['Images/MessyRoundRects/','Images/Noise/']" -v 1 -n Results -e 300 -t tri -m "['r','m']" -p 2
 
  - **IMAGE_DIR (required):** The directory to load the images from
  - **MODEL_TO_LOAD (-l):** If this field is specified, the program will look in the folder provided and start the training with the model loaded from there.
+  - **MODEL_TO_CREATE (-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
  - **RUN_ID (-n):** The results will be saved in a folder with this name. If this is not specified, a name will be created based on other information.
  - **EPOCHS (-e):** The number of epochs to train on the data
  - **IMAGE_TYPES (-t):** Types of images to train on
@@ -23,24 +26,29 @@ Run the python file Parameters.py like this:
 ## How to Predict
 Run the python file Parameters.py like this:
 
-    python3 Parameters.py predict IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID
-    
+    python3 Parameters.py predict IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -m PARAMETER -p N_PARAM
+
  - **IMAGE_DIR (required):** The directory to load the images from
  - **MODEL_TO_LOAD (required)(-l):** Model used to predict.
  - **RUN_ID (-n):** The results will be saved in a folder with this name. If this is not specified, the loaded model's folder will be used
+ - **PARAMETER (-m):** Parameters for training
+ - **N_PARAM (-p):** Number of Parameters for training 
+
  
  Other options aren't included for now for predicting, because prediction images are assumed to be unlabeled.
  
 ## How to Test
 Run the python file Parameters.py like this:
 
-    python3 Parameters.py test IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -e EPOCHS -t IMAGE_TYPES -m PARAMETER_MAP
-    
+    python3 Parameters.py test IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -e EPOCHS -t IMAGE_TYPES  -m PARAMETER -p N_PARAM
+
  - **IMAGE_DIR (required):** The directory to load the images from
  - **MODEL_TO_LOAD (required)(-l):** Model used to test
  - **RUN_ID (-n):** Results are saved in a folder with this name if the field is specified, otherwise it uses the existing folder.
  - **IMAGE_TYPES (-t):** Types of images to test on.
- - **PARAMETER_MAP (-t):** Mapping of parameters used to equate them for testing. A dictionary of one letter strings.
+ - **PARAMETER (-m):** Parameters for training
+ - **N_PARAM (-p):** Number of Parameters for training 
+
 
 
 ## Image Format and Files
