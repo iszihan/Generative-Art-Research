@@ -67,7 +67,7 @@ def main():
 		model = ParameterModel(args.model_to_load, args.run_id)
 
 		print('Image Directories to load from:', ast.literal_eval(args.directories))
-		model.predict_operation(ast.literal_eval(args.directories), ast.literal_eval(args.parameter), args.model_to_load, args.n_param)
+		model.predict_operation(ast.literal_eval(args.directories), ast.literal_eval(args.parameter), args.model_to_load, args.n_param, args.model_to_create)
 
 	elif args.operation == 'info':
 		pass
@@ -202,7 +202,7 @@ class ParameterModel:
 			with open(os.path.join(model_dir, 'model_architecture.json'), 'r') as f:
 				self.model = model_from_json(f.read())
 
-			self.model.load_weights(os.path.join(model_dir, 'model_weights.02-39.08.hdf5)'))
+			self.model.load_weights(os.path.join(model_dir, 'Model_Weight.h5'))
 			self.model.compile(loss=Parameter_Models.get_customLoss(),optimizer='adam')
 		except (ImportError, ValueError):
 			sys.exit('Error importing model.h5 file.' + os.path.join(model_dir, 'Model.h5') + ' No such file, or incompatible')
@@ -251,6 +251,8 @@ class ParameterModel:
 	def load_only_x(self, image_dirs, n_param, model_to_create):
 		# For loading unlabelled data.
 		x = self.load_data(image_dirs, None, None, False, n_param, model_to_create)
+		names = np.asarray(self.image_names)
+		self.test_names = names
 		self.x_test = x
 
 	def load_data(self, image_dirs, image_types, parameter, load_y, n_param, model_to_create):  # TODO: Add support for loading images from multiple directories
@@ -316,25 +318,30 @@ class ParameterModel:
 		# Build y values
 		print('Loading y:')
 		for i_name in range(len(temp_image_names)):
-			parameter_indexes = [m.start() + 1 for m in re.finditer('-', temp_image_names[i_name])][0:-1]
-			temp_trained_parameters = [temp_image_names[i_name][i] for i in parameter_indexes]
+			parameter_indexes = [m.start() + 1 for m in re.finditer('-', temp_image_names[i_name])]
+			temp_trained_parameters = [temp_image_names[i_name][i] for i in parameter_indexes[0:-1]]
+			print('The parameters found in this image are:', temp_trained_parameters)
 			temp_n_parameters = len(temp_trained_parameters)
+
 			for i_letter in range(self.n_trained_parameters):
 				if temp_n_parameters == self.n_trained_parameters:
 					letter = temp_trained_parameters[i_letter]
 					index_in_name = temp_image_names[i_name].find('-' + letter)
+					index_end_name = parameter_indexes[i_letter+1]-1
 					if index_in_name == -1:
 						#print(image_names[i_name], 'is missing the', letter, 'parameter')
 						continue
-					value = temp_image_names[i_name][index_in_name + 2:index_in_name + 4]
+					value = temp_image_names[i_name][index_in_name + 2:index_end_name]
 					y[i_name, i_letter] = value
 				elif temp_n_parameters == 1:
 					cur_letter = self.trained_parameters[i_letter]
 					letter = temp_trained_parameters[0]
 					if letter == cur_letter:
 						index_in_name = temp_image_names[i_name].find('-' + letter)
-						value = temp_image_names[i_name][index_in_name + 2:index_in_name + 4]
+						index_end_name = parameter_indexes[1]-1
+						value = temp_image_names[i_name][index_in_name + 2:index_end_name]
 						y[i_name, i_letter] = value
+
 
 
 		# # FIND IMAGE NAMES THAT AREN'T GIVING VALUES
@@ -355,7 +362,7 @@ class ParameterModel:
 			if(model_to_create == 1):
 				temp_image = image.resize((224,224))
 				image = np.array(temp_image) / 255
-				return image[:, :, :].reshape((self.image_dim, self.image_dim, 3)).astype(np.float32)
+				return image[:, :, 0:3].reshape((self.image_dim, self.image_dim, 3)).astype(np.float32)
 			elif(model_to_create == 2):
 				temp_image = image.resize((200,200))
 				image = np.array(temp_image) / 255
@@ -471,16 +478,13 @@ class ParameterModel:
 		self.test_predictions = self.model.predict(self.x_test, batch_size=self.batch_size)
 		np.clip(self.test_predictions, 0, 100, out=self.test_predictions)
 
-		names = np.asarray(self.image_names)
-		print('Image_names shape:',names.shape)
+
+		print('Predict_names shape:',self.test_names.shape)
 		print('Predictions shape:',self.test_predictions.shape)
 
-		output = np.zeros(names.size, dtype=[('name', 'U32'), ('r', float),('m',float)])
-		output['name'] = names
-		output['r'] = self.test_predictions[:,0:1].ravel()
-		output['m'] = self.test_predictions[:,1:2].ravel()
+		output = np.column_stack([self.test_names,self.test_predictions])
 
-		np.savetxt(os.path.join(self.results_dir, 'Predict Results.csv'),output, fmt="%10s %10.3f %10.3f")
+		np.savetxt(os.path.join(self.results_dir, 'PredictResults.csv'),output, delimiter=',', header="name,r_pred,m_pred", fmt='%s')
 
 
 
