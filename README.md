@@ -21,6 +21,7 @@ Run the python file Parameters.py like this:
  - **IMAGE_TYPES (-t):** Types of images to train on
  - **PARAMETER (-m):** Parameters for training
  - **N_PARAM (-p):** Number of Parameters for training 
+ - **GPU_TO_USE (-g):** Which GPU/CPU to use for this operation. (Depending on the devices of the user.)
 
 
 ## How to Predict
