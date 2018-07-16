@@ -18,6 +18,8 @@ import keras.losses
 import Parameter_Models
 from PIL import Image
 import json
+from tensorflow.python.client import device_lib
+import tensorflow as tf
 
 
 def main():
@@ -34,20 +36,44 @@ def main():
 	parser.add_argument('-e', '--epochs', action='store', dest='n_epochs', type=int, help='Number of epochs to use for training and traintest operations', default=1)
 	parser.add_argument('-m', '--parameters', action='store', dest='parameter', help='Map one parameter to another with a dictionary', default=None)
 	parser.add_argument('-p', '--number_parameter', action='store', dest='n_param', type=int, help='Number of parameters to train', default='1')
+	parser.add_argument('-g', '--gpu', action='store', dest='gpu_to_use', type=int, help='GPU to use', default='1')
+
 
 
 	args = parser.parse_args()
 
 	if args.operation == 'train':
-		if args.run_id is None and args.model_to_load is None:  # The run will have a new folder created for it and it needs a new name
-			args.run_id = args.operation + ' ' + str(args.n_epochs) + ' epochs ' + 'from ' + os.path.basename(os.path.normpath(args.directories[0]))
+		if args.gpu_to_use == 0:
+			os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+			print('Using GPU:0');
+			print('Device used:', device_lib.list_local_devices())
+			if args.run_id is None and args.model_to_load is None:  # The run will have a new folder created for it and it needs a new name
+				args.run_id = args.operation + ' ' + str(args.n_epochs) + ' epochs ' + 'from ' + os.path.basename(os.path.normpath(args.directories[0]))
 
-		model = ParameterModel(args.model_to_load, args.run_id)
+			model = ParameterModel(args.model_to_load, args.run_id)
 
-		if hasattr(args, 'image_types'):
-			model.set_image_types(args.image_types)
-		print('Directories to load from:', ast.literal_eval(args.directories))
-		model.train_operation(ast.literal_eval(args.directories), args.n_epochs, args.image_types, ast.literal_eval(args.parameter), args.n_param, args.model_to_create)
+			if hasattr(args, 'image_types'):
+				model.set_image_types(args.image_types)
+			print('Directories to load from:', ast.literal_eval(args.directories))
+			print('Device used:', device_lib.list_local_devices())
+
+			model.train_operation(ast.literal_eval(args.directories), args.n_epochs, args.image_types, ast.literal_eval(args.parameter), args.n_param, args.model_to_create)
+		elif args.gpu_to_use == 1:
+			with tf.device('/gpu:1'):
+				print('Using GPU:1');
+				print('Device used:', device_lib.list_local_devices())
+				if args.run_id is None and args.model_to_load is None:  # The run will have a new folder created for it and it needs a new name
+					args.run_id = args.operation + ' ' + str(args.n_epochs) + ' epochs ' + 'from ' + os.path.basename(os.path.normpath(args.directories[0]))
+
+				model = ParameterModel(args.model_to_load, args.run_id)
+
+				if hasattr(args, 'image_types'):
+					model.set_image_types(args.image_types)
+				print('Directories to load from:', ast.literal_eval(args.directories))
+				print('Device used:', device_lib.list_local_devices())
+				model.train_operation(ast.literal_eval(args.directories), args.n_epochs, args.image_types, ast.literal_eval(args.parameter), args.n_param, args.model_to_create)
+
+
 
 	elif args.operation == 'test':
 		print('Test Operation')
@@ -64,7 +90,9 @@ def main():
 		if args.model_to_load is None:  # This is a completely new model and a new training run
 			sys.exit('A predict operation must load a model')
 		print('MODEL TO LOAD', args.model_to_load)
-		model = ParameterModel(args.model_to_load, args.run_id)
+		print('Device used:', device_lib.list_local_devices())
+		with tf.device('/cpu:0'):
+			model = ParameterModel(args.model_to_load, args.run_id)
 
 		print('Image Directories to load from:', ast.literal_eval(args.directories))
 		model.predict_operation(ast.literal_eval(args.directories), ast.literal_eval(args.parameter), args.model_to_load, args.n_param, args.model_to_create)
@@ -117,7 +145,7 @@ class ParameterModel:
 
 	test_margin = 10
 
-	batch_size = 300
+	batch_size = 100
 	image_dim = 0  # TODO: Add support for rectangular images
 
 	x_train = []
@@ -158,6 +186,9 @@ class ParameterModel:
 			elif model_to_create==2 :
 				print('Creating Customized Model')
 				self.create_model(self.n_trained_parameters)
+			elif model_to_create==3 :
+				print('Creating ResNet50 Model')
+				self.create_resmodel(self.n_trained_parameters)
 
 
 		history = self.train(epochs)  # Fills self.train_predictions
@@ -231,7 +262,9 @@ class ParameterModel:
 	def load_train_and_test_data(self, image_dirs, image_types, parameter,n_param, model_to_create):
 		x, y = self.load_data(image_dirs, image_types, parameter, True, n_param, model_to_create)
 
-		print(y[0:30, :])
+		print("X shape:",x.shape)
+		# print(y[0:30, :])
+
 
 		test_split = int(x.shape[0] * 0.8)
 		names = np.asarray(self.image_names)
@@ -239,6 +272,7 @@ class ParameterModel:
 		self.train_names, self.test_names = np.array_split(names, [test_split])
 		self.x_train, self.x_test = np.array_split(x, [test_split])
 		self.y_train, self.y_test = np.array_split(y, [test_split])
+		print(self.x_train.shape)
 
 	def load_test_data(self, image_dirs, image_types, parameter, n_param, model_to_create):
 		x, y = self.load_data(image_dirs, image_types, parameter, True, n_param, model_to_create)
@@ -276,7 +310,8 @@ class ParameterModel:
 
 		image_dir_dir = os.path.dirname(os.path.dirname(image_dirs[0]))  # The directory that holds all of the image directories. This assumes all of the directories live in a common folder.
 		#self.get_image_dim(os.path.join(image_dir_dir, self.image_names[1]))
-		if(model_to_create==1):
+
+		if(model_to_create==1 or model_to_create == 3):
 			self.image_dim = 224
 		elif(model_to_create==2):
 			self.image_dim = 200
@@ -289,7 +324,8 @@ class ParameterModel:
 		print('Number of images:',n_names)
 		print('Loading x:')
 		x = np.array([self.get_image(os.path.join(image_dir_dir, name),model_to_create) for name in self.image_names])
-		if(model_to_create==1):
+
+		if( model_to_create==1 or model_to_create==3):
 			x = x.reshape((n_names, self.image_dim, self.image_dim, 3)).astype(np.float32)
 		elif(model_to_create==2):
 			x = x.reshape((n_names, self.image_dim, self.image_dim, 1)).astype(np.float32)
@@ -320,7 +356,7 @@ class ParameterModel:
 		for i_name in range(len(temp_image_names)):
 			parameter_indexes = [m.start() + 1 for m in re.finditer('-', temp_image_names[i_name])]
 			temp_trained_parameters = [temp_image_names[i_name][i] for i in parameter_indexes[0:-1]]
-			print('The parameters found in this image are:', temp_trained_parameters)
+			# print('The parameters found in this image are:', temp_trained_parameters)
 			temp_n_parameters = len(temp_trained_parameters)
 
 			for i_letter in range(self.n_trained_parameters):
@@ -359,10 +395,13 @@ class ParameterModel:
 
 	def get_image(self, path,model_to_create):
 		with Image.open(path) as image:
-			if(model_to_create == 1):
+			if(model_to_create == 1 or model_to_create==3):
 				temp_image = image.resize((224,224))
 				image = np.array(temp_image) / 255
-				return image[:, :, 0:3].reshape((self.image_dim, self.image_dim, 3)).astype(np.float32)
+				if(image.shape == (224,224,4)):
+					return image[:, :, 0:3].reshape((self.image_dim, self.image_dim, 3)).astype(np.float32)
+				else:
+					return image[:, :, :].reshape((self.image_dim, self.image_dim, 3)).astype(np.float32)
 			elif(model_to_create == 2):
 				temp_image = image.resize((200,200))
 				image = np.array(temp_image) / 255
@@ -372,6 +411,9 @@ class ParameterModel:
 
 	def create_vggmodel(self, n_parameters):
 		self.model = Parameter_Models.vgg19_custom(n_parameters)
+
+	def create_resmodel(self, n_parameters):
+			self.model = Parameter_Models.ResNet_custom(n_parameters)
 
 	def create_model(self, n_parameters):
 		self.model = Parameter_Models.more_conv_multiple(self.image_dim, n_parameters)
@@ -456,7 +498,7 @@ class ParameterModel:
 			history = self.model.fit(self.x_train, self.y_train, epochs=n_epochs, batch_size=self.batch_size, callbacks=[converge_monitor])
 
 		else:
-			model_checkpoint = ModelCheckpoint(os.path.join(self.results_dir, 'model_weights.{epoch:02d}-{val_loss:.2f}.hdf5)'),monitor='val_loss',save_weights_only=True,mode='auto',period=1)
+			model_checkpoint = ModelCheckpoint(os.path.join(self.results_dir, 'model_weights.{epoch:02d}-{val_loss:.2f}.hdf5)'),monitor='val_loss',save_best_only=True,save_weights_only=True,mode='auto',period=1)
 			history = self.model.fit(self.x_train, self.y_train, epochs=n_epochs, batch_size=self.batch_size, callbacks=[model_checkpoint],validation_data=(self.x_test,self.y_test))
 
 		print('Predicting training data:')
@@ -512,7 +554,7 @@ class ParameterModel:
 		np.savetxt(os.path.join(self.results_dir, 'Loss History.csv'), loss_history, delimiter=',', header=(','.join(self.trained_parameters) + ',') * 2)
 
 		figure.canvas.set_window_title('Loss History')
-		figure.savefig(os.path.join(self.results_dir, 'Loss History.png'), dpi=300)
+		figure.savefig(os.path.join(self.results_dir, 'Loss History.png'), dpi=100)
 
 
 	def plot_predictions(self, predictions, title):
@@ -541,7 +583,7 @@ class ParameterModel:
 		train_figure.canvas.set_window_title(title)
 		train_figure.legend()
 
-		train_figure.savefig(os.path.join(self.results_dir, title + '.png'), dpi=300)
+		train_figure.savefig(os.path.join(self.results_dir, title + '.png'), dpi=100)
 
 
 	def set_parameter(self, new_parameter):

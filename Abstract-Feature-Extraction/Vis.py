@@ -52,7 +52,7 @@ class Visualization(QtGui.QWidget):
     m_value = []
 
     def __init__(self):
-        super(Visualization,self).__init__()
+        super().__init__()
         self.setGeometry(0, 0, self.width, self.height)
         self.read_file(args.directories)
         self.add_images()
