@@ -55,7 +55,7 @@ def main():
 			if hasattr(args, 'image_types'):
 				model.set_image_types(args.image_types)
 			print('Directories to load from:', ast.literal_eval(args.directories))
-			print('Device used:', device_lib.list_local_devices())
+
 
 			model.train_operation(ast.literal_eval(args.directories), args.n_epochs, args.image_types, ast.literal_eval(args.parameter), args.n_param, args.model_to_create)
 		elif args.gpu_to_use == 1:
