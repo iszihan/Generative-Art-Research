@@ -11,9 +11,25 @@
 *.zip
 *.txt
 *.tif
+*.doc
 
 Abstract-Feature-Extraction/Models/
 Abstract-Feature-Extraction/Images/
 Abstract-Feature-Extraction/__pycache__/
 Abstract-Feature-Extraction/.idea/
 Abstract-Feature-Extraction/PreviousTraining/
+Abstract-Feature-Extraction/718Train_ctm100ep_rd
+Abstract-Feature-Extraction/717Train_vgg100ep_rd
+Abstract-Feature-Extraction/717Predict_vgg100ep_rd
+Abstract-Feature-Extraction/719Predict_ctm200ep_rd
+Abstract-Feature-Extraction/719Predict_ctm200ep_rd_min
+Abstract-Feature-Extraction/718Train_ctm200ep_rd
+
+
+
+
+ImageAnalysis/__pycache__
+ImageAnalysis/718Train_ctm200ep_rd
+ImageAnalysis/evoart_600
+ImageAnalysis/Image15_Analysis
+ImageAnalysis/Image16_Analysis

@@ -23,7 +23,7 @@ void randrect(float rad) {
 }
 
 void draw() {
-  for (int iteration = 0; iteration < 83; iteration++) {
+  for (int iteration = 0; iteration < 166; iteration++) {
     for (int r=0; r<10; r++) {
       for (int blur = 0; blur <= 2; blur++) {
 

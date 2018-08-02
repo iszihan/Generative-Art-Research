@@ -27,7 +27,7 @@ def main():
 	Contains the command line interface for the ParameterModel class
 	"""
 	parser = argparse.ArgumentParser()
-	parser.add_argument('operation', action='store', choices=['train', 'test', 'predict', 'info'], help='Which operation to do')
+	parser.add_argument('operation', action='store', choices=['train', 'test', 'predict', 'analyze','info'], help='Which operation to do')
 	parser.add_argument('directories', action='store', help='The directories to load images from')
 	parser.add_argument('-l', '--model_to_load', action='store', dest='model_to_load', help='Previous model to load and use for training or predictions', default=None)
 	parser.add_argument('-v', '--model_to_create', action='store', dest='model_to_create',type=int, help='Model to create', default='1')
@@ -36,6 +36,7 @@ def main():
 	parser.add_argument('-e', '--epochs', action='store', dest='n_epochs', type=int, help='Number of epochs to use for training and traintest operations', default=1)
 	parser.add_argument('-m', '--parameters', action='store', dest='parameter', help='Map one parameter to another with a dictionary', default=None)
 	parser.add_argument('-p', '--number_parameter', action='store', dest='n_param', type=int, help='Number of parameters to train', default='1')
+	parser.add_argument('-d', '--number_division', action='store', dest='n_division', type=int, help='Number of division to analyze', default='5')
 	parser.add_argument('-g', '--gpu', action='store', dest='gpu_to_use', type=int, help='GPU to use', default='1')
 
 	args = parser.parse_args()
@@ -70,6 +71,15 @@ def main():
 			print('Directories to load from:', ast.literal_eval(args.directories))
 			model.train_operation(ast.literal_eval(args.directories), args.n_epochs, args.image_types, ast.literal_eval(args.parameter), args.n_param, args.model_to_create)
 
+	elif args.operation == 'analyze':
+		print('Analyze Operation')
+		if args.model_to_load is None:  # This is a completely new model and a new training run
+			sys.exit('A test operation must load a model')
+
+		print('MODEL TO LOAD', args.model_to_load)
+		model = ParameterModel(args.model_to_load, args.run_id)
+
+		model.analyze_operation(ast.literal_eval(args.directories), args.image_types, ast.literal_eval(args.parameter), args.n_division, args.model_to_load, args.model_to_create)
 
 
 	elif args.operation == 'test':
@@ -133,6 +143,7 @@ class ParameterModel:
 	trained_image_types = []  # A list of the first three identifier letters at the beginning of the image files to only train on those types
 	image_names = []
 	test_names = []
+	analyze_index = []
 	train_names = []
 	trained_parameters = None
 	n_trained_parameters = 1
@@ -212,6 +223,18 @@ class ParameterModel:
 		print('Plotting the results:')
 		self.plot_against_y(self.test_predictions, self.y_test, 'Test Predictions vs Values', test_scores)
 
+
+	def analyze_operation(self, image_dirs, image_types, parameter, n_div, loaded_model, model_to_create):
+		# Assumes model has already been loaded when the ParameterObject object was created
+		image_path = os.path.normpath(image_dirs[0])
+		print('Loading Data')
+		self.load_analyze_data(image_path, image_types, parameter, n_div, model_to_create)
+		print('Analyzing:')
+		self.analyze() #generates 'predict results' file
+
+		# self.plot_analysis(self.test_predictions)
+
+
 	def predict_operation(self, image_dirs, parameter, model_to_load, n_param, model_to_create):
 		# For making a set of predictions from unlabeled data
 		print('Loading Data')
@@ -219,7 +242,6 @@ class ParameterModel:
 		self.load_only_x(image_dirs,n_param,model_to_create) #fills x_test
 		print('Predicting:')
 		self.predict() #generates 'predict results' file
-		#TODO: plot predictions
 
 
 
@@ -279,12 +301,53 @@ class ParameterModel:
 		self.x_test = x
 		self.y_test = y
 
+
 	def load_only_x(self, image_dirs, n_param, model_to_create):
 		# For loading unlabelled data.
 		x = self.load_data(image_dirs, None, None, False, n_param, model_to_create)
 		names = np.asarray(self.image_names)
 		self.test_names = names
 		self.x_test = x
+
+	def get_analyze_image(self, image_dirs,gap,x_coord, y_coord):
+		with Image.open(image_dirs) as image:
+			crop_rectangle = (x_coord, y_coord, x_coord+self.image_dim, y_coord+self.image_dim)
+			cropped_im = image.crop(crop_rectangle)
+			ix = int(x_coord/gap)
+			iy = int(y_coord/gap)
+			name = str(ix)+str(iy)
+			file_path = os.path.join(self.results_dir,name)
+			cropped_im.save(file_path+".jpeg","JPEG")
+			image = np.array(cropped_im) / 255
+			image = image[:, :].reshape((self.image_dim, self.image_dim, 1)).astype(np.float32)
+			return image
+
+	def load_analyze_data(self, image_dirs, image_types, parameter, n_div, model_to_create):
+		# For loading unlabelled data.
+
+		self.trained_parameters = parameter
+		if(model_to_create==1 or model_to_create == 3):
+			self.image_dim = 224
+		elif(model_to_create==2):
+			self.image_dim = 200
+
+		with Image.open(image_dirs) as image:
+			width, height = image.size
+			original_dim = width
+
+		print('Loading x:')
+		gap = (original_dim-self.image_dim)/(n_div-1)
+		print("gap:",gap)
+		for ix in range(n_div):
+			for iy in range(n_div):
+				self.x_test.append(self.get_analyze_image(image_dirs,gap,ix*gap,iy*gap))
+				self.analyze_index.append(str(ix)+str(iy))
+
+		self.x_test = np.asarray(self.x_test)
+		self.analyze_index = np.asarray(self.analyze_index).reshape(n_div*n_div,1)
+		print(self.x_test.shape)
+		print(self.analyze_index.shape)
+
 
 	def load_data(self, image_dirs, image_types, parameter, load_y, n_param, model_to_create):  # TODO: Add support for loading images from multiple directories
 		"""
@@ -389,6 +452,7 @@ class ParameterModel:
 	# 		width, height = image.size
 	# 	assert (width == height), 'Images should be square'
 	# 	self.image_dim = width
+
 
 	def get_image(self, path,model_to_create):
 		with Image.open(path) as image:
@@ -526,7 +590,17 @@ class ParameterModel:
 
 		np.savetxt(os.path.join(self.results_dir, 'PredictResults.csv'),output, delimiter=',', header="name,r_pred,m_pred", fmt='%s')
 
+	def analyze(self):
 
+		self.model.compile(loss='mse',optimizer='adam')
+		self.test_predictions = self.model.predict(self.x_test, batch_size=self.batch_size)
+		np.clip(self.test_predictions, 0, 100, out=self.test_predictions)
+
+		print('Predict_names shape:',self.analyze_index.shape)
+		print('Predictions shape:',self.test_predictions.shape)
+
+		output = np.column_stack((self.analyze_index,self.test_predictions))
+		np.savetxt(os.path.join(self.results_dir, 'AnalyzeResults.csv'),output, delimiter=',', header="region_index,r_pred", fmt='%s')
 
 	def plot_loss_history(self, history):
 		train_loss_history = history.history['loss']

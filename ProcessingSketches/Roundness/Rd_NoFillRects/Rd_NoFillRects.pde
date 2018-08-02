@@ -26,9 +26,9 @@ void randrect(float rad) {
 }
 
 void draw() {
-  for (int iteration = 0; iteration < 83; iteration++) {
+  for (int iteration = 0; iteration < 100; iteration++) {
     for (int rad = 0; rad<10; rad++) {
-      for (int blur=0; blur<=2; blur++) {
+      for (int blur=0; blur<=4; blur++) {
 
         clear();
         float back_col = random(0, 255);
@@ -38,8 +38,8 @@ void draw() {
             randrect(rad);
           }
         } else if (rad==9) {
-          for(int i=0; i<=int(random(2,25)); i++){
-            float radius = random(width/9, width/3);
+          for(int i=0; i<=int(random(1,25)); i++){
+            float radius = random(width/8, width/2);
             float x = random(20, width-20);
             float y = random(20, height-20);
             float r = random(0, 255);
@@ -50,7 +50,6 @@ void draw() {
             float wt = random(0, 10);
             strokeWeight(wt);
             noFill();
-  
             ellipse(x, y, radius, radius);
           }
         }

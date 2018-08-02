@@ -35,7 +35,7 @@ void draw() {
         PImage temp = get();
         temp.filter(BLUR, blur);
         
-        String fileName = String.format("Noise/tri-r%02d-noi%03d%01d.png", 10 - i -1, iteration, blur);
+        String fileName = String.format("Output/tri-r%02d-noi%03d%01d.png", 10 - i -1, iteration, blur);
         temp.save(fileName);
         //println(String.format("%02.02f", (iteration*100 + i)/(100.0 * ITERATIONS)));
         println(count);
