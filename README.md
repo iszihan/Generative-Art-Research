@@ -2,26 +2,29 @@
 # Generative-Art-Research
 Neural networks to extract mid-level such as roundness, or messiness from images, especially abstract images. Training is done on a controlled set of generated images with continuous levels of these parameters.
 
-- **Abstract-Feature-Recognition** contains the training, testing, and predicted code as well as helper files
+- **Abstract-Feature-Recognition** Contains the training, testing, and predicted code as well as helper files
+- **ImageAnalysis** Contains the analyzing function as well as the training, testing, and predicted code.
 - **Processing Sketches** Contains the Processing scripts used to generate the training images
 
 ## How to Train on an Image Set
 Run the python file Parameters.py like this:
 
-    python3 Parameters.py train IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -v MODEl_TYPE -e EPOCHS -t IMAGE_TYPES -m PARAMETER -p N_PARAM
-    EXAMPLE: 
-    Loading existing VGG19 model: python3 Parameters.py train "['Images/MessyRoundRects/','Images/Noise/']" -v 1 -l Models/Trial1 -n Results -e 300 -t tri -m "['r','m']" -p 2
-    Creating new Hans model: python3 Parameters.py train "['Images/MessyRoundRects/','Images/Noise/']" -v 2 -n Results -e 300 -t tri -m "['r','m']" -p 2
+    python3 Parameters.py train IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -v MODEl_TYPE -e EPOCHS -m PARAMETER -p N_PARAM -g GPU_TO_USE
+    EXAMPLE:
+    Loading existing VGG19 model:
+    python3 Parameters.py train "['Images/MessyRoundRects/','Images/Noise/']" -v 1 -l Models/Trial1 -n Results -e 300 -t tri -m "['r','m']" -p 2 -g 0
+    Creating new Hans model:
+    python3 Parameters.py train "['Images/MessyRoundRects/','Images/Noise/']" -v 2 -n Results -e 300 -t tri -m "['r','m']" -p 2 -g 1
 
  - **IMAGE_DIR (required):** The directory to load the images from
  - **MODEL_TO_LOAD (-l):** If this field is specified, the program will look in the folder provided and start the training with the model loaded from there.
-  - **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
+ - **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
  - **RUN_ID (-n):** The results will be saved in a folder with this name. If this is not specified, a name will be created based on other information.
  - **EPOCHS (-e):** The number of epochs to train on the data
- - **IMAGE_TYPES (-t):** Types of images to train on
  - **PARAMETER (-m):** Parameters for training
- - **N_PARAM (-p):** Number of Parameters for training 
- - **GPU_TO_USE (-g):** Which GPU/CPU to use for this operation. (Depending on the devices of the user.)
+ - **N_PARAM (-p):** Number of Parameters for training
+ - **GPU_TO_USE (-g):** Which GPU/CPU to use for this training operation. (Depending on the devices of the user.)
+
 
 
 ## How to Predict
@@ -34,25 +37,33 @@ Run the python file Parameters.py like this:
  - **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
  - **RUN_ID (-n):** The results will be saved in a folder with this name. If this is not specified, the loaded model's folder will be used
  - **PARAMETER (-m):** Parameters for training
- - **N_PARAM (-p):** Number of Parameters for training 
+ - **N_PARAM (-p):** Number of Parameters for training
 
- 
  Other options aren't included for now for predicting, because prediction images are assumed to be unlabeled.
- 
+
 ## How to Test
 Run the python file Parameters.py like this:
 
-    python3 Parameters.py test IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -v MODEL_TYPE -e EPOCHS -t IMAGE_TYPES  -m PARAMETER -p N_PARAM
+    python3 Parameters.py test IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -v MODEL_TYPE -e EPOCHS  -m PARAMETER -p N_PARAM
 
  - **IMAGE_DIR (required):** The directory to load the images from
  - **MODEL_TO_LOAD (required)(-l):** Model used to test
  - **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
  - **RUN_ID (-n):** Results are saved in a folder with this name if the field is specified, otherwise it uses the existing folder.
- - **IMAGE_TYPES (-t):** Types of images to test on.
  - **PARAMETER (-m):** Parameters for training
- - **N_PARAM (-p):** Number of Parameters for training 
+ - **N_PARAM (-p):** Number of Parameters for training
 
+## How to Analyze (Use the code in the ImageAnalysis folder)
+Run the python file Parameters.py like this:
 
+   python3 Parameters.py analyze IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -v MODEL_TYPE -m PARAMETER -d N_DIVISION
+
+- **IMAGE_DIR (required):** The directory to load the images from
+- **MODEL_TO_LOAD (required)(-l):** Model used to analyze
+- **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
+- **RUN_ID (-n):** Results are saved in a folder with this name if the field is specified, otherwise it uses the existing folder.
+- **PARAMETER (-m):** Parameters for analysis
+- **N_DIVISION (-D):** Number of division for single axis (x or y) for an image
 
 ## Image Format and Files
 The images should be in the format **img-c##-r##-###.png**
@@ -66,7 +77,6 @@ The processing scripts in the repository could also just be run to generate the 
 
 ### Remove Junk Images
 Using a Firefox extension to download Google Images search results, I ended up with quite a few images that my script can't open. If the quality of the images is unknown, you can run the **Remove_Bad_Images.py** script on the directory first.
-
 
 
 # TO DO
