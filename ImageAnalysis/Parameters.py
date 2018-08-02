@@ -31,7 +31,6 @@ def main():
 	parser.add_argument('directories', action='store', help='The directories to load images from')
 	parser.add_argument('-l', '--model_to_load', action='store', dest='model_to_load', help='Previous model to load and use for training or predictions', default=None)
 	parser.add_argument('-v', '--model_to_create', action='store', dest='model_to_create',type=int, help='Model to create', default='1')
-	parser.add_argument('-t', '--image_types', action='store', dest='image_types', help='Types (first 3 letters of file names) of images to train on. String of characters with no spaces', default=None)
 	parser.add_argument('-n', '--run_id', action='store', dest='run_id', help='Name for operation. Supplying a name will create a new results folder with that name', default=None)
 	parser.add_argument('-e', '--epochs', action='store', dest='n_epochs', type=int, help='Number of epochs to use for training and traintest operations', default=1)
 	parser.add_argument('-m', '--parameters', action='store', dest='parameter', help='Map one parameter to another with a dictionary', default=None)
@@ -46,30 +45,28 @@ def main():
 			os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 			print('Using GPU:0');
 			print('Device used:', device_lib.list_local_devices())
+
 			if args.run_id is None and args.model_to_load is None:  # The run will have a new folder created for it and it needs a new name
 				args.run_id = args.operation + ' ' + str(args.n_epochs) + ' epochs ' + 'from ' + os.path.basename(os.path.normpath(args.directories[0]))
 
 			model = ParameterModel(args.model_to_load, args.run_id)
 
-			if hasattr(args, 'image_types'):
-				model.set_image_types(args.image_types)
 			print('Directories to load from:', ast.literal_eval(args.directories))
 
-
-			model.train_operation(ast.literal_eval(args.directories), args.n_epochs, args.image_types, ast.literal_eval(args.parameter), args.n_param, args.model_to_create)
+			model.train_operation(ast.literal_eval(args.directories), args.n_epochs, ast.literal_eval(args.parameter), args.n_param, args.model_to_create)
+			
 		elif args.gpu_to_use == 1:
 			os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 			print('Using GPU:1');
 			print('Device used:', device_lib.list_local_devices())
+
 			if args.run_id is None and args.model_to_load is None:  # The run will have a new folder created for it and it needs a new name
 				args.run_id = args.operation + ' ' + str(args.n_epochs) + ' epochs ' + 'from ' + os.path.basename(os.path.normpath(args.directories[0]))
 
 			model = ParameterModel(args.model_to_load, args.run_id)
 
-			if hasattr(args, 'image_types'):
-				model.set_image_types(args.image_types)
 			print('Directories to load from:', ast.literal_eval(args.directories))
-			model.train_operation(ast.literal_eval(args.directories), args.n_epochs, args.image_types, ast.literal_eval(args.parameter), args.n_param, args.model_to_create)
+			model.train_operation(ast.literal_eval(args.directories), args.n_epochs, ast.literal_eval(args.parameter), args.n_param, args.model_to_create)
 
 	elif args.operation == 'analyze':
 		print('Analyze Operation')
@@ -79,7 +76,7 @@ def main():
 		print('MODEL TO LOAD', args.model_to_load)
 		model = ParameterModel(args.model_to_load, args.run_id)
 
-		model.analyze_operation(ast.literal_eval(args.directories), args.image_types, ast.literal_eval(args.parameter), args.n_division, args.model_to_load, args.model_to_create)
+		model.analyze_operation(ast.literal_eval(args.directories), ast.literal_eval(args.parameter), args.n_division, args.model_to_load, args.model_to_create)
 
 
 	elif args.operation == 'test':
@@ -90,7 +87,7 @@ def main():
 		print('MODEL TO LOAD', args.model_to_load)
 		model = ParameterModel(args.model_to_load, args.run_id)
 
-		model.test_operation(ast.literal_eval(args.directories), args.image_types, ast.literal_eval(args.parameter), args.model_to_load, args.n_param)
+		model.test_operation(ast.literal_eval(args.directories), ast.literal_eval(args.parameter), args.model_to_load, args.n_param)
 
 	elif args.operation == 'predict':
 		print('Predict Operation')
@@ -113,19 +110,19 @@ class ParameterModel:
 	"""
 	Creating a new model and training on it
 		model = ParameterModel(run_id, None)
-		model.train_operation(directories, epochs, image_types=image_types, parameter=parameter)
+		model.train_operation(directories, epochs, parameter=parameter)
 
 	Training an existing model without duplicating/creating a new folder
 		model = ParameterModel(None, model_to_load)
-		model.train_operation(directories, epochs, image_types=image_types, parameter=parameter)
+		model.train_operation(directories, epochs, parameter=parameter)
 
 	Training an existing model and creating a new folder for the changed model
 		model = ParameterModel(run_id, model_to_load)
-		model.train_operation(directories, epochs, image_types=image_types, parameter=parameter)
+		model.train_operation(directories, epochs, parameter=parameter)
 
 	Testing an existing model on a data set
 		model = ParameterModel(run_id (optional), model_to_load)
-		model.test_op(directories, image_types=image_types, parameter=parameter)
+		model.test_op(directories, parameter=parameter)
 
 	Predicting values for a set of unlabeled images
 		model = ParameterModel(run_id (optional), model_to_load)
@@ -140,7 +137,6 @@ class ParameterModel:
 	results_dir = ''
 
 	#trained_parameter_map = {}  # Dictionary mapping of equivalent parameters. {'f':'r'} means 'f' should be equivalent to 'r' for training
-	trained_image_types = []  # A list of the first three identifier letters at the beginning of the image files to only train on those types
 	image_names = []
 	test_names = []
 	analyze_index = []
@@ -180,11 +176,11 @@ class ParameterModel:
 			print('Results in directory:', self.results_dir)
 
 
-	def train_operation(self, image_dirs, epochs, image_types, parameter, n_param, model_to_create):
+	def train_operation(self, image_dirs, epochs, parameter, n_param, model_to_create):
 		# Loads and trains on data and saves/shows result data and plots
 
 		print('Loading Data')
-		self.load_train_and_test_data(image_dirs, image_types, parameter, n_param, model_to_create)
+		self.load_train_and_test_data(image_dirs, parameter, n_param, model_to_create)
 		print(model_to_create)
 
 		if self.model is None:
@@ -212,11 +208,11 @@ class ParameterModel:
 		self.save_model_and_params()
 		self.save_training_description(image_dirs)
 
-	def test_operation(self, image_dirs, image_types, parameter, loaded_model, n_param, model_to_create):
+	def test_operation(self, image_dirs, parameter, loaded_model, n_param, model_to_create):
 		# Assumes model has already been loaded when the ParameterObject object was created
 
 		print('Loading Data')
-		self.load_test_data(image_dirs, image_types, parameter,n_param,model_to_create)
+		self.load_test_data(image_dirs, parameter,n_param,model_to_create)
 
 		test_scores = self.test()
 		print('Test Score: ', test_scores)
@@ -224,11 +220,11 @@ class ParameterModel:
 		self.plot_against_y(self.test_predictions, self.y_test, 'Test Predictions vs Values', test_scores)
 
 
-	def analyze_operation(self, image_dirs, image_types, parameter, n_div, loaded_model, model_to_create):
+	def analyze_operation(self, image_dirs, parameter, n_div, loaded_model, model_to_create):
 		# Assumes model has already been loaded when the ParameterObject object was created
 		image_path = os.path.normpath(image_dirs[0])
 		print('Loading Data')
-		self.load_analyze_data(image_path, image_types, parameter, n_div, model_to_create)
+		self.load_analyze_data(image_path, parameter, n_div, model_to_create)
 		print('Analyzing:')
 		self.analyze() #generates 'predict results' file
 
@@ -261,7 +257,6 @@ class ParameterModel:
 			parameters = pickle.load(parameters_file)
 			self.results_dir                = parameters['results_dir']
 			#self.trained_parameter_map      = parameters['parameter_map']
-			self.trained_image_types        = parameters['image_types']
 			self.trained_parameters         = parameters['trained_parameters']
 			self.n_trained_parameters       = len(self.trained_parameters)
 			self.batch_size                 = parameters['batch_size']
@@ -278,8 +273,8 @@ class ParameterModel:
 		self.results_dir = results_dir
 
 
-	def load_train_and_test_data(self, image_dirs, image_types, parameter,n_param, model_to_create):
-		x, y = self.load_data(image_dirs, image_types, parameter, True, n_param, model_to_create)
+	def load_train_and_test_data(self, image_dirs, parameter,n_param, model_to_create):
+		x, y = self.load_data(image_dirs, parameter, True, n_param, model_to_create)
 
 		print("X shape:",x.shape)
 		# print(y[0:30, :])
@@ -293,8 +288,8 @@ class ParameterModel:
 		self.y_train, self.y_test = np.array_split(y, [test_split])
 		print(self.x_train.shape)
 
-	def load_test_data(self, image_dirs, image_types, parameter, n_param, model_to_create):
-		x, y = self.load_data(image_dirs, image_types, parameter, True, n_param, model_to_create)
+	def load_test_data(self, image_dirs, parameter, n_param, model_to_create):
+		x, y = self.load_data(image_dirs, parameter, True, n_param, model_to_create)
 
 		names = np.asarray(self.image_names)
 		self.test_names = names
@@ -322,7 +317,7 @@ class ParameterModel:
 			image = image[:, :].reshape((self.image_dim, self.image_dim, 1)).astype(np.float32)
 			return image
 
-	def load_analyze_data(self, image_dirs, image_types, parameter, n_div, model_to_create):
+	def load_analyze_data(self, image_dirs, parameter, n_div, model_to_create):
 		# For loading unlabelled data.
 
 		self.trained_parameters = parameter
@@ -349,9 +344,9 @@ class ParameterModel:
 		print(self.analyze_index.shape)
 
 
-	def load_data(self, image_dirs, image_types, parameter, load_y, n_param, model_to_create):  # TODO: Add support for loading images from multiple directories
+	def load_data(self, image_dirs, parameter, load_y, n_param, model_to_create):  # TODO: Add support for loading images from multiple directories
 		"""
-		Gets x and y values for images with types matching values in image_types in the specified directories.
+		Gets x and y values for images with types matching values in the specified directories.
 		Maps parameters
 
 		Fills the following instance variables:
@@ -377,8 +372,6 @@ class ParameterModel:
 			self.image_dim = 200
 
 		# Remove the images types that aren't wanted for training if some are specified with a list
-		# if image_types is not None:
-		# 	self.image_names = [name for name in self.image_names if any(kind in name for kind in image_types)]
 
 		n_names = len(self.image_names)
 		print('Number of images:',n_names)
@@ -491,12 +484,6 @@ class ParameterModel:
 			summary_file.write('\n')
 			if self.loaded_model:
 				summary_file.write('Loaded from previously trained model in ' + self.loaded_model + '\n')
-			if self.trained_image_types is None:
-				summary_file.write('Trained on all image types')
-			else:
-				summary_file.write('Valid image types: ')
-				for kind in self.trained_image_types:
-					summary_file.write(kind + ', ')
 			summary_file.write('\n' + 'Trained for ' + str(self.trained_epochs) + ' epochs.' + '\n')
 			summary_file.write('Tested with a margin of ' + str(self.test_margin) + ' points.' + '\n')
 			summary_file.write('Images had dimension ' + str(self.image_dim) + ' pixels, square.' + '\n')
@@ -514,7 +501,7 @@ class ParameterModel:
 		with open(os.path.join(self.results_dir, 'model_architecture.json'), 'w') as f:
 			f.write(self.model.to_json())
 
-		to_save = {'results_dir': self.results_dir, 'image_types': self.trained_image_types, 'trained_parameters': self.trained_parameters, 'batch_size': self.batch_size}
+		to_save = {'results_dir': self.results_dir, 'trained_parameters': self.trained_parameters, 'batch_size': self.batch_size}
 		with open(os.path.join(self.results_dir, 'Parameters.pickle'), 'wb') as parameter_file:
 			pickle.dump(to_save, parameter_file)
 
@@ -662,9 +649,6 @@ class ParameterModel:
 		# The parameter map is used equivocate one image parameter to another for training.
 		# For example, to test how similar noise and roundness are, you could map f (noise) to r (roundness) with the map {'f':'r'}
 		self.trained_parameter = new_parameter
-
-	def set_image_types(self, image_types):
-		self.trained_image_types = image_types
 
 	def set_margin(self, margin):
 		self.test_margin = margin
