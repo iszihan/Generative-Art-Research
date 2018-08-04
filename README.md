@@ -57,9 +57,10 @@ Run the python file Parameters.py like this:
 ## How to Analyze (Use the code in the ImageAnalysis folder)
 Run the python file Parameters.py like this:
 
-   python3 Parameters.py analyze IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -v MODEL_TYPE -m PARAMETER -d N_DIVISION
-   To analyze two images in Evo_Art folder with 5*5=25 subimages with customized model (input size=200*200):
-   python3 Parameters.py analyze "['Evo_Art/image-15.jpg','Evo_Art/image-19.jpg']" -v 1 -l Models/Trial1 -n Results -m "['r']" -d 5
+     python3 Parameters.py analyze IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -v MODEL_TYPE -m PARAMETER -d N_DIVISION
+     EXAMPLE:
+     To analyze two images in Evo_Art folder with 5*5=25 subimages with customized model:
+     python3 Parameters.py analyze "['Evo_Art/image-15.jpg','Evo_Art/image-19.jpg']" -v 1 -l Models/Trial1 -n Results -m "['r']" -d 5
 
 - **IMAGE_DIR (required):** The image paths.
 - **MODEL_TO_LOAD (required)(-l):** Model used to analyze
