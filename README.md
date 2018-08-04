@@ -18,8 +18,8 @@ Run the python file Parameters.py like this:
 
  - **IMAGE_DIR (required):** The directory to load the images from
  - **MODEL_TO_LOAD (-l):** If this field is specified, the program will look in the folder provided and start the training with the model loaded from there.
- - **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
  - **RUN_ID (-n):** The results will be saved in a folder with this name. If this is not specified, a name will be created based on other information.
+ - **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
  - **EPOCHS (-e):** The number of epochs to train on the data
  - **PARAMETER (-m):** Parameters for training
  - **N_PARAM (-p):** Number of Parameters for training
@@ -34,8 +34,8 @@ Run the python file Parameters.py like this:
 
  - **IMAGE_DIR (required):** The directory to load the images from
  - **MODEL_TO_LOAD (required)(-l):** Model used to predict.
- - **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
  - **RUN_ID (-n):** The results will be saved in a folder with this name. If this is not specified, the loaded model's folder will be used
+ - **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
  - **PARAMETER (-m):** Parameters for training
  - **N_PARAM (-p):** Number of Parameters for training
 
@@ -48,8 +48,9 @@ Run the python file Parameters.py like this:
 
  - **IMAGE_DIR (required):** The directory to load the images from
  - **MODEL_TO_LOAD (required)(-l):** Model used to test
- - **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
  - **RUN_ID (-n):** Results are saved in a folder with this name if the field is specified, otherwise it uses the existing folder.
+ - **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
+ - **EPOCHS (-e):** The number of epochs to train on the data
  - **PARAMETER (-m):** Parameters for training
  - **N_PARAM (-p):** Number of Parameters for training
 
@@ -57,8 +58,10 @@ Run the python file Parameters.py like this:
 Run the python file Parameters.py like this:
 
    python3 Parameters.py analyze IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -v MODEL_TYPE -m PARAMETER -d N_DIVISION
+   To analyze two images in Evo_Art folder with 5*5=25 subimages with customized model (input size=200*200):
+   python3 Parameters.py analyze "['Evo_Art/image-15.jpg','Evo_Art/image-19.jpg']" -v 1 -l Models/Trial1 -n Results -m "['r']" -d 5
 
-- **IMAGE_DIR (required):** The directory to load the images from
+- **IMAGE_DIR (required):** The image paths.
 - **MODEL_TO_LOAD (required)(-l):** Model used to analyze
 - **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
 - **RUN_ID (-n):** Results are saved in a folder with this name if the field is specified, otherwise it uses the existing folder.
