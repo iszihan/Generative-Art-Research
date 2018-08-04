@@ -3,7 +3,7 @@ import os
 import re
 import pickle
 import matplotlib as mpl
-mpl.use('Agg')
+# mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
@@ -14,6 +14,7 @@ from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
 from keras.utils.vis_utils import plot_model
 from keras.models import model_from_json
+from keras.utils import plot_model
 import keras.losses
 import Parameter_Models
 from PIL import Image
@@ -54,7 +55,7 @@ def main():
 			print('Directories to load from:', ast.literal_eval(args.directories))
 
 			model.train_operation(ast.literal_eval(args.directories), args.n_epochs, ast.literal_eval(args.parameter), args.n_param, args.model_to_create)
-			
+
 		elif args.gpu_to_use == 1:
 			os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 			print('Using GPU:1');
@@ -77,7 +78,6 @@ def main():
 		model = ParameterModel(args.model_to_load, args.run_id)
 
 		model.analyze_operation(ast.literal_eval(args.directories), ast.literal_eval(args.parameter), args.n_division, args.model_to_load, args.model_to_create)
-
 
 	elif args.operation == 'test':
 		print('Test Operation')
@@ -104,6 +104,7 @@ def main():
 	elif args.operation == 'info':
 		pass
 
+	plt.show()
 
 
 class ParameterModel:
@@ -135,11 +136,10 @@ class ParameterModel:
 
 	model = None
 	results_dir = ''
-
 	#trained_parameter_map = {}  # Dictionary mapping of equivalent parameters. {'f':'r'} means 'f' should be equivalent to 'r' for training
 	image_names = []
+	image_paths = []
 	test_names = []
-	analyze_index = []
 	train_names = []
 	trained_parameters = None
 	n_trained_parameters = 1
@@ -147,10 +147,17 @@ class ParameterModel:
 	loaded_model = None
 	trained_epochs = 0
 
+	# analyze_index = []
+	analyze_count = []
+	analyze_pred = []
+
 	test_margin = 10
 
 	batch_size = 100
+	original_dim = 0
 	image_dim = 0  # TODO: Add support for rectangular images
+
+	gap = 0
 
 	x_train = []
 	y_train = []
@@ -168,7 +175,8 @@ class ParameterModel:
 			self.retrieve_model(model_to_load)
 
 		if run_id:
-			self.make_results_directory(run_id)  # Overrides the self.results_dir value from retrieve model
+			path = os.path.join(os.path.normpath("Analysis"),run_id)
+			self.make_results_directory(path)  # Overrides the self.results_dir value from retrieve model
 			print('Created results directory:', self.results_dir)
 		else:
 			# Existing results directory should be reused because no run_id has been provided
@@ -221,14 +229,17 @@ class ParameterModel:
 
 
 	def analyze_operation(self, image_dirs, parameter, n_div, loaded_model, model_to_create):
-		# Assumes model has already been loaded when the ParameterObject object was created
-		image_path = os.path.normpath(image_dirs[0])
-		print('Loading Data')
-		self.load_analyze_data(image_path, parameter, n_div, model_to_create)
-		print('Analyzing:')
-		self.analyze() #generates 'predict results' file
 
-		# self.plot_analysis(self.test_predictions)
+		# Assumes model has already been loaded when the ParameterObject object was created
+		print("How many directories:",len(image_dirs))
+		for i in range(len(image_dirs)):
+			image_path = os.path.normpath(image_dirs[i])
+			self.image_paths.append(image_path)
+			self.image_names.append(os.path.basename(image_path))
+			print('Loading Data for ',self.image_names[i])
+			self.load_analyze_data(i, parameter, n_div, model_to_create)
+			print('Analyzing:')
+			self.analyze(i, n_div) #generates 'predict results' file
 
 
 	def predict_operation(self, image_dirs, parameter, model_to_load, n_param, model_to_create):
@@ -296,7 +307,6 @@ class ParameterModel:
 		self.x_test = x
 		self.y_test = y
 
-
 	def load_only_x(self, image_dirs, n_param, model_to_create):
 		# For loading unlabelled data.
 		x = self.load_data(image_dirs, None, None, False, n_param, model_to_create)
@@ -304,44 +314,55 @@ class ParameterModel:
 		self.test_names = names
 		self.x_test = x
 
-	def get_analyze_image(self, image_dirs,gap,x_coord, y_coord):
-		with Image.open(image_dirs) as image:
+	def get_analyze_image(self,index,gap,x_coord, y_coord):
+
+		#Add 1 to the relevant pixel locations in analyze_count array
+		x = int(x_coord)
+		y = int(y_coord)
+		# print("X:",x,"Y:",y)
+		self.analyze_count[y:y+self.image_dim,x:x+self.image_dim]+=1
+		# print(self.analyze_count[y:y+self.image_dim,x:x+self.image_dim])
+
+		#Turn the subimage to-be-analyzed into an array
+		with Image.open(self.image_paths[index]) as image:
+			image.save(os.path.join(self.results_dir,self.image_names[index]))
 			crop_rectangle = (x_coord, y_coord, x_coord+self.image_dim, y_coord+self.image_dim)
 			cropped_im = image.crop(crop_rectangle)
-			ix = int(x_coord/gap)
-			iy = int(y_coord/gap)
-			name = str(ix)+str(iy)
-			file_path = os.path.join(self.results_dir,name)
-			cropped_im.save(file_path+".jpeg","JPEG")
 			image = np.array(cropped_im) / 255
 			image = image[:, :].reshape((self.image_dim, self.image_dim, 1)).astype(np.float32)
 			return image
 
-	def load_analyze_data(self, image_dirs, parameter, n_div, model_to_create):
+	def load_analyze_data(self, index, parameter, n_div, model_to_create):
 		# For loading unlabelled data.
 
 		self.trained_parameters = parameter
+
 		if(model_to_create==1 or model_to_create == 3):
 			self.image_dim = 224
 		elif(model_to_create==2):
 			self.image_dim = 200
 
-		with Image.open(image_dirs) as image:
+		with Image.open(self.image_paths[index]) as image:
 			width, height = image.size
-			original_dim = width
+			self.original_dim = width
+
+		self.analyze_count = np.zeros((self.original_dim,self.original_dim))
+		self.analyze_pred = np.zeros((self.original_dim,self.original_dim))
 
 		print('Loading x:')
-		gap = (original_dim-self.image_dim)/(n_div-1)
-		print("gap:",gap)
+		self.gap = (self.original_dim-self.image_dim)/(n_div-1)
+		print("Stride:",self.gap)
+
+		self.x_test = []
 		for ix in range(n_div):
 			for iy in range(n_div):
-				self.x_test.append(self.get_analyze_image(image_dirs,gap,ix*gap,iy*gap))
-				self.analyze_index.append(str(ix)+str(iy))
+				self.x_test.append(self.get_analyze_image(index,self.gap,ix*self.gap,iy*self.gap))
+				# self.analyze_index.append(str(ix)+str(iy))
 
 		self.x_test = np.asarray(self.x_test)
-		self.analyze_index = np.asarray(self.analyze_index).reshape(n_div*n_div,1)
+		# self.analyze_index = np.asarray(self.analyze_index).reshape(n_div*n_div,1)
 		print(self.x_test.shape)
-		print(self.analyze_index.shape)
+		# print(self.analyze_index.shape)
 
 
 	def load_data(self, image_dirs, parameter, load_y, n_param, model_to_create):  # TODO: Add support for loading images from multiple directories
@@ -577,17 +598,59 @@ class ParameterModel:
 
 		np.savetxt(os.path.join(self.results_dir, 'PredictResults.csv'),output, delimiter=',', header="name,r_pred,m_pred", fmt='%s')
 
-	def analyze(self):
+	def analyze(self,img_index, n_div):
 
 		self.model.compile(loss='mse',optimizer='adam')
+
+		# # Visualize the weights
+		# print("Number of layers:",len(self.model.layers))
+		# top_layer = self.model.layers[0]
+		# print("Layer Shape:",top_layer.get_weights()[0].shape)
+		# plt.imshow(top_layer.get_weights()[0][:, :, :, 0].squeeze(), cmap='gray') #shows the first filter of first layer
 		self.test_predictions = self.model.predict(self.x_test, batch_size=self.batch_size)
-		np.clip(self.test_predictions, 0, 100, out=self.test_predictions)
+		np.clip(self.test_predictions, 0, 10, out=self.test_predictions)
 
-		print('Predict_names shape:',self.analyze_index.shape)
+		# print('Predict_names shape:',self.analyze_index.shape)
 		print('Predictions shape:',self.test_predictions.shape)
+		print('Predictions type:',type(self.test_predictions.shape))
 
-		output = np.column_stack((self.analyze_index,self.test_predictions))
-		np.savetxt(os.path.join(self.results_dir, 'AnalyzeResults.csv'),output, delimiter=',', header="region_index,r_pred", fmt='%s')
+		# output = np.column_stack((self.analyze_index,self.test_predictions))
+		# np.savetxt(os.path.join(self.results_dir, 'AnalyzeResults.csv'),output, delimiter=',', header="region_index,r_pred", fmt='%s')
+		# plot_model(self.model, to_file='model.png')
+
+		index = 0
+		for ix in range(n_div):
+			for iy in range(n_div):
+				self.analyze_image(ix*self.gap,iy*self.gap,index)
+				index+=1
+
+		heatmap = self.analyze_pred/self.analyze_count
+		print("Original Max:",heatmap[:,:].max())
+		heatmap = heatmap[:,:]/heatmap[:,:].max()
+		print("Max after normalization:",heatmap[:,:].max())
+		heatmap = heatmap[:,:]*255
+		img = Image.fromarray(np.uint8(heatmap))
+		file_path = os.path.join(self.results_dir,self.image_names[img_index][:-4]+"_heatmap.jpeg")
+		img.save(file_path,"JPEG")
+
+	def analyze_image(self, x_coord, y_coord,index):
+
+		#Add 1 to the relevant pixel locations in analyze_count array
+		x = int(x_coord)
+		y = int(y_coord)
+		# print("X:",x,"Y:",y)
+		analyze_prediction = np.asarray(self.test_predictions)
+		self.analyze_pred[y:y+self.image_dim,x:x+self.image_dim]+=analyze_prediction[index]
+		# print(self.analyze_pred[y:y+self.image_dim,x:x+self.image_dim])
+
+		# with Image.open(image_dirs) as image:
+		# 	crop_rectangle = (x_coord, y_coord, x_coord+self.image_dim, y_coord+self.image_dim)
+		# 	cropped_im = image.crop(crop_rectangle)
+		# 	ix = int(x_coord/self.gap)
+		# 	iy = int(y_coord/self.gap)
+		# 	name = str(self.test_predictions[index])+str(ix)+str(iy)
+		# 	file_path = os.path.join(self.results_dir,name)
+		# 	cropped_im.save(file_path+".jpeg","JPEG")
 
 	def plot_loss_history(self, history):
 		train_loss_history = history.history['loss']

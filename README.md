@@ -63,7 +63,7 @@ Run the python file Parameters.py like this:
 - **MODEL_TYPE(-v):** If no MODEL_TO_LOAD is specified, this has to be specified in terms of which model to create (1=VGG19 Model/ 2 = Customized Model). Default value is 1.
 - **RUN_ID (-n):** Results are saved in a folder with this name if the field is specified, otherwise it uses the existing folder.
 - **PARAMETER (-m):** Parameters for analysis
-- **N_DIVISION (-D):** Number of division for single axis (x or y) for an image
+- **N_DIVISION (-D):** Number of smaller parts you wish to divide the input image on single axis (x or y) for further analysis.
 
 ## Image Format and Files
 The images should be in the format **img-c##-r##-###.png**
