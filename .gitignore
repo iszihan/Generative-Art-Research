@@ -1,7 +1,6 @@
 
 *.png
 *.h5
-*.csv
 *.json
 *.xlsx
 .DS_Store
