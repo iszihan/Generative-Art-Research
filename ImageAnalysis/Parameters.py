@@ -658,8 +658,9 @@ class ParameterModel:
 		#Add the prediction to the relevant pixel locations in analyze_pred array
 		x = int(x_coord)
 		y = int(y_coord)
-		analyze_prediction = np.asarray(self.test_predictions)
-		self.analyze_pred[y:y+self.image_dim,x:x+self.image_dim]+=analyze_prediction[index]
+		#analyze_prediction = np.asarray(self.test_predictions)
+		#self.analyze_pred[y:y+self.image_dim,x:x+self.image_dim]+=analyze_prediction[index]
+		self.analyze_pred[y:y+self.image_dim,x:x+self.image_dim]+=4
 
 	def plot_loss_history(self, history):
 		train_loss_history = history.history['loss']
