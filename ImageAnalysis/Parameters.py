@@ -21,6 +21,8 @@ from PIL import Image
 import json
 from tensorflow.python.client import device_lib
 import tensorflow as tf
+import csv
+
 
 
 def main():
@@ -150,6 +152,7 @@ class ParameterModel:
 	# analyze_index = []
 	analyze_count = []
 	analyze_pred = []
+	validation = [] #store dictionaries of overall prediction and average prediction over subimages
 
 	test_margin = 10
 
@@ -229,7 +232,6 @@ class ParameterModel:
 
 
 	def analyze_operation(self, image_dirs, parameter, n_div, loaded_model, model_to_create):
-
 		# Assumes model has already been loaded when the ParameterObject object was created
 		print("How many directories:",len(image_dirs))
 		for i in range(len(image_dirs)):
@@ -240,6 +242,13 @@ class ParameterModel:
 			self.load_analyze_data(i, parameter, n_div, model_to_create)
 			print('Analyzing:')
 			self.analyze(i, n_div) #generates 'predict results' file
+
+		keys = self.validation[0].keys()
+		result_path = os.path.join(self.results_dir,'image_predictions_comparison.csv')
+		with open(result_path, 'w') as output_file:
+		    dict_writer = csv.DictWriter(output_file, keys)
+		    dict_writer.writeheader()
+		    dict_writer.writerows(self.validation)
 
 
 	def predict_operation(self, image_dirs, parameter, model_to_load, n_param, model_to_create):
@@ -354,6 +363,7 @@ class ParameterModel:
 		print("Stride:",self.gap)
 
 		self.x_test = []
+		self.x_test.append(self.get_image(self.image_paths[index],model_to_create))
 		for ix in range(n_div):
 			for iy in range(n_div):
 				self.x_test.append(self.get_analyze_image(index,self.gap,ix*self.gap,iy*self.gap))
@@ -468,7 +478,7 @@ class ParameterModel:
 	# 	self.image_dim = width
 
 
-	def get_image(self, path,model_to_create):
+	def get_image(self,path,model_to_create):
 		with Image.open(path) as image:
 			if(model_to_create == 1 or model_to_create==3):
 				temp_image = image.resize((224,224))
@@ -481,7 +491,11 @@ class ParameterModel:
 			elif(model_to_create == 2):
 				temp_image = image.resize((200,200))
 				image = np.array(temp_image) / 255
-				return image[:, :, 0].reshape((self.image_dim, self.image_dim, 1)).astype(np.float32)
+				if(image.shape==(200,200)):
+					return image[:, :].reshape((self.image_dim, self.image_dim, 1)).astype(np.float32)
+				else:
+					return image[:, :, 0].reshape((self.image_dim, self.image_dim, 1)).astype(np.float32)
+
 
 
 
@@ -598,7 +612,7 @@ class ParameterModel:
 
 		np.savetxt(os.path.join(self.results_dir, 'PredictResults.csv'),output, delimiter=',', header="name,r_pred,m_pred", fmt='%s')
 
-	def analyze(self,img_index, n_div):
+	def analyze(self,img_index,n_div):
 
 		self.model.compile(loss='mse',optimizer='adam')
 
@@ -607,18 +621,14 @@ class ParameterModel:
 		# top_layer = self.model.layers[0]
 		# print("Layer Shape:",top_layer.get_weights()[0].shape)
 		# plt.imshow(top_layer.get_weights()[0][:, :, :, 0].squeeze(), cmap='gray') #shows the first filter of first layer
+
 		self.test_predictions = self.model.predict(self.x_test, batch_size=self.batch_size)
 		np.clip(self.test_predictions, 0, 10, out=self.test_predictions)
 
-		# print('Predict_names shape:',self.analyze_index.shape)
 		print('Predictions shape:',self.test_predictions.shape)
 		print('Predictions type:',type(self.test_predictions.shape))
 
-		# output = np.column_stack((self.analyze_index,self.test_predictions))
-		# np.savetxt(os.path.join(self.results_dir, 'AnalyzeResults.csv'),output, delimiter=',', header="region_index,r_pred", fmt='%s')
-		# plot_model(self.model, to_file='model.png')
-
-		index = 0
+		index = 1
 		for ix in range(n_div):
 			for iy in range(n_div):
 				self.analyze_image(ix*self.gap,iy*self.gap,index)
@@ -626,31 +636,30 @@ class ParameterModel:
 
 		heatmap = self.analyze_pred/self.analyze_count
 		print("Original Max:",heatmap[:,:].max())
-		heatmap = heatmap[:,:]/heatmap[:,:].max()
-		print("Max after normalization:",heatmap[:,:].max())
+		heatmap = heatmap[:,:]/10
+		print("Max after division by 10:",heatmap[:,:].max())
 		heatmap = heatmap[:,:]*255
 		img = Image.fromarray(np.uint8(heatmap))
 		file_path = os.path.join(self.results_dir,self.image_names[img_index][:-4]+"_heatmap.jpeg")
 		img.save(file_path,"JPEG")
 
+		image_val = {}
+		analyze_prediction = np.asarray(self.test_predictions)
+		image_val["Image"]=self.image_names[img_index]
+		image_val["Overall Prediction"]=analyze_prediction[0]
+		print("Overall Prediction:",analyze_prediction[0])
+		print("Average over:",analyze_prediction[1:].shape)
+		image_val["Average Prediction"]=np.mean(analyze_prediction[1:])
+		print("Average Prediction:",image_val["Average Prediction"])
+		self.validation.append(image_val)
+
 	def analyze_image(self, x_coord, y_coord,index):
 
-		#Add 1 to the relevant pixel locations in analyze_count array
+		#Add the prediction to the relevant pixel locations in analyze_pred array
 		x = int(x_coord)
 		y = int(y_coord)
-		# print("X:",x,"Y:",y)
 		analyze_prediction = np.asarray(self.test_predictions)
 		self.analyze_pred[y:y+self.image_dim,x:x+self.image_dim]+=analyze_prediction[index]
-		# print(self.analyze_pred[y:y+self.image_dim,x:x+self.image_dim])
-
-		# with Image.open(image_dirs) as image:
-		# 	crop_rectangle = (x_coord, y_coord, x_coord+self.image_dim, y_coord+self.image_dim)
-		# 	cropped_im = image.crop(crop_rectangle)
-		# 	ix = int(x_coord/self.gap)
-		# 	iy = int(y_coord/self.gap)
-		# 	name = str(self.test_predictions[index])+str(ix)+str(iy)
-		# 	file_path = os.path.join(self.results_dir,name)
-		# 	cropped_im.save(file_path+".jpeg","JPEG")
 
 	def plot_loss_history(self, history):
 		train_loss_history = history.history['loss']
