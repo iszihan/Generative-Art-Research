@@ -23,6 +23,10 @@ from tensorflow.python.client import device_lib
 import tensorflow as tf
 import csv
 
+from vis.visualization import visualize_activation
+from vis.utils import utils
+from keras import activations
+
 
 
 def main():
@@ -616,11 +620,28 @@ class ParameterModel:
 
 		self.model.compile(loss='mse',optimizer='adam')
 
-		# # Visualize the weights
-		# print("Number of layers:",len(self.model.layers))
-		# top_layer = self.model.layers[0]
-		# print("Layer Shape:",top_layer.get_weights()[0].shape)
-		# plt.imshow(top_layer.get_weights()[0][:, :, :, 0].squeeze(), cmap='gray') #shows the first filter of first layer
+		# Visualize the weights
+		print("Number of layers:",len(self.model.layers))
+		top_layer = self.model.layers[0]
+		print("First Layer Shape:",top_layer.get_weights()[0].shape)
+		n_filters = top_layer.get_weights()[0].shape[-1]
+		for i in range(n_filters):
+			print("Saving Visualization Image for the ", i, "th filter in the first layer:")
+			image_name = "Layer1_" + str(i) +".jpeg"
+			save_path = os.path.join(self.results_dir,image_name)
+			plt.imsave(save_path, top_layer.get_weights()[0][:, :, :, i].squeeze(), cmap='gray') #shows the first filter of first layer
+
+		second_layer = self.model.layers[2]
+		print("Second Layer Shape:",second_layer.get_weights()[0].shape)
+
+		layer_idx = utils.find_layer_idx(self.model, 'conv2d_1')
+		self.model.layers[layer_idx].activation = activations.linear
+		self.model = utils.apply_modifications(self.model)
+		filter_idx = 0
+		img = visualize_activation(self.model, layer_idx, filter_indices=filter_idx)
+		image_name = "Activation_Layer1_" + str(0) +".jpeg"
+		save_path = os.path.join(self.results_dir,image_name)
+		plt.imsave(save_path, img[...,0], cmap='gray') #shows the first filter of first layer
 
 		self.test_predictions = self.model.predict(self.x_test, batch_size=self.batch_size)
 		np.clip(self.test_predictions, 0, 10, out=self.test_predictions)
