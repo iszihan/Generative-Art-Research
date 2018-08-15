@@ -6,7 +6,7 @@ Neural networks to extract mid-level such as roundness, or messiness from images
 - **ImageAnalysis** Contains the analyzing function as well as the training, testing, and predicted code.
 - **Processing Sketches** Contains the Processing scripts used to generate the training images
 
-## How to Train on an Image Set
+## How to Train on an Image Set (Use the code in the Abstract-Feature-Recognition folder)
 Run the python file Parameters.py like this:
 
     python3 Parameters.py train IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -v MODEl_TYPE -e EPOCHS -m PARAMETER -p N_PARAM -g GPU_TO_USE
@@ -26,8 +26,7 @@ Run the python file Parameters.py like this:
  - **GPU_TO_USE (-g):** Which GPU/CPU to use for this training operation. (Depending on the devices of the user.)
 
 
-
-## How to Predict
+## How to Predict (Use the code in the Abstract-Feature-Recognition folder)
 Run the python file Parameters.py like this:
 
     python3 Parameters.py predict IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -v MODEl_TYPE -m PARAMETER -p N_PARAM
@@ -41,7 +40,7 @@ Run the python file Parameters.py like this:
 
  Other options aren't included for now for predicting, because prediction images are assumed to be unlabeled.
 
-## How to Test
+## How to Test (Use the code in the Abstract-Feature-Recognition folder)
 Run the python file Parameters.py like this:
 
     python3 Parameters.py test IMAGE_DIR -l MODEL_TO_LOAD -n RUN_ID -v MODEL_TYPE -e EPOCHS  -m PARAMETER -p N_PARAM
