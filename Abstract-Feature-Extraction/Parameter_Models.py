@@ -12,7 +12,7 @@ from random import *
 from keras.layers.advanced_activations import LeakyReLU
 import tensorflow as tf
 
-
+#Customized loss function of train on two parameters with available datapoint
 def get_customLoss():
     def customLoss(y_true,y_pred):
         y_zeros = y_pred-y_pred
@@ -23,7 +23,7 @@ def get_customLoss():
         return K.sum(K.square(y_pred_temp - y_true_temp),axis=None)/num
     return customLoss
 
-
+#Han's customized model
 def more_conv_multiple(input_dim, n_parameters):
     model = Sequential()
     model.add(Convolution2D(8, (9, 9), padding='same', strides=(2, 2), input_shape=(input_dim, input_dim, 1)))
@@ -59,7 +59,7 @@ def more_conv_multiple(input_dim, n_parameters):
 
     return model
 
-
+#Transfer Learning model using vgg19 and 'imagenet' weights
 def vgg19_custom(n_parameters):
 
     base_model = VGG19(weights='imagenet', include_top=False, input_shape=(224,224,3))
@@ -80,22 +80,26 @@ def vgg19_custom(n_parameters):
     x = Dense(32, kernel_regularizer=regularizers.l2(0.01))(x)
     x = LeakyReLU(alpha=0.3)(x)
     x = Dropout(0.1)(x)
-    # and a logistic layer -- let's say we have 200 classes
+
     predictions = Dense(n_parameters, activation='linear')(x)
     model = Model(inputs=base_model.input, outputs=predictions)
 
-    # for layer in base_model.layers:
-    #     layer.trainable = False
+    #Freeze the conv-layer weights
+    for layer in base_model.layers:
+        layer.trainable = False
 
+    #When training on multiple parameters, use the customized loss function
     if(n_parameters>1):
         print("Using custom loss function:")
         model.compile(loss=get_customLoss(),optimizer='adam')
+    #When training on single parameter, use the built-in "mean-square-error" loss function
     elif(n_parameters==1):
         print("Using default mean-square-error loss function:")
         model.compile(loss='mse',optimizer='adam')
 
     return model
 
+#Transfer Learning using ResNet model, not giving good result. See https://github.com/keras-team/keras/issues/9214 for potential problems with this approach.
 def ResNet_custom(n_parameters):
 
     base_model = ResNet50(weights='imagenet', include_top=False, input_shape=(224,224,3))
@@ -112,7 +116,7 @@ def ResNet_custom(n_parameters):
     x = Dense(32, kernel_regularizer=regularizers.l2(0.01))(x)
     x = LeakyReLU(alpha=0.3)(x)
     x = Dropout(0.1)(x)
-    # and a logistic layer -- let's say we have 200 classes
+
     predictions = Dense(n_parameters, activation='linear')(x)
     model = Model(inputs=base_model.input, outputs=predictions)
 
@@ -131,6 +135,7 @@ def ResNet_custom(n_parameters):
     model.compile(loss=get_customLoss(),optimizer='adam')
     return model
 
+# Han's Old Code for other models
 # def original(input_dim):
 #     model = Sequential()
 #     model.add(Convolution2D(8, (9, 9), padding='same', input_shape=(input_dim, input_dim, 3)))

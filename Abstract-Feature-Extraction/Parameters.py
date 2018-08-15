@@ -87,7 +87,7 @@ def main():
 		if args.model_to_load is None:  # This is a completely new model and a new training run
 			sys.exit('A predict operation must load a model')
 		print('MODEL TO LOAD', args.model_to_load)
-		print('Device used:', device_lib.list_local_devices())
+
 		with tf.device('/cpu:0'):
 			model = ParameterModel(args.model_to_load, args.run_id)
 
@@ -231,7 +231,9 @@ class ParameterModel:
 				self.model = model_from_json(f.read())
 
 			self.model.load_weights(os.path.join(model_dir, 'Model_Weight.h5'))
-			self.model.compile(loss=Parameter_Models.get_customLoss(),optimizer='adam')
+			# self.model.compile(loss=Parameter_Models.get_customLoss(),optimizer='adam')
+			self.model.compile(loss='mse',optimizer='adam')
+
 		except (ImportError, ValueError):
 			sys.exit('Error importing model.h5 file.' + os.path.join(model_dir, 'Model.h5') + ' No such file, or incompatible')
 
@@ -403,7 +405,10 @@ class ParameterModel:
 			elif(model_to_create == 2):
 				temp_image = image.resize((200,200))
 				image = np.array(temp_image) / 255
-				return image[:, :, 0].reshape((self.image_dim, self.image_dim, 1)).astype(np.float32)
+				if(image.shape==(200,200)):
+					return image[:, :].reshape((self.image_dim, self.image_dim, 1)).astype(np.float32)
+				else:
+					return image[:, :, 0].reshape((self.image_dim, self.image_dim, 1)).astype(np.float32)
 
 
 

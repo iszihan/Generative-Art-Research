@@ -273,7 +273,8 @@ class ParameterModel:
 				self.model = model_from_json(f.read())
 
 			self.model.load_weights(os.path.join(model_dir, 'Model_Weight.h5'))
-			self.model.compile(loss=Parameter_Models.get_customLoss(),optimizer='adam')
+			# self.model.compile(loss=Parameter_Models.get_customLoss(),optimizer='adam')
+			self.model.compile(loss='mse',optimizer='adam')
 		except (ImportError, ValueError):
 			sys.exit('Error importing model.h5 file.' + os.path.join(model_dir, 'Model.h5') + ' No such file, or incompatible')
 
@@ -346,8 +347,7 @@ class ParameterModel:
 			return image
 
 	def load_analyze_data(self, index, parameter, n_div, model_to_create):
-		# For loading unlabelled data.
-
+		# For loading analysis data
 		self.trained_parameters = parameter
 
 		if(model_to_create==1 or model_to_create == 3):
@@ -427,17 +427,6 @@ class ParameterModel:
 
 		temp_image_names = list(self.image_names)  # Duplicate list so the original names aren't changed in case they need to be used
 
-		# Map the parameters in the parameter map dictionary
-		#for i in range(len(temp_image_names)):
-		#	for letter in parameter_map:
-		#		if '-' + letter in temp_image_names[i]:
-		#			temp_image_names[i] = temp_image_names[i].replace('-' + letter, '-' + parameter_map[letter])
-		#self.trained_parameter_map = parameter_map
-
-
-		#parameter_indexes = [m.start() + 1 for m in re.finditer('-', temp_image_names[0])][0:-1]  # Don't use the last '-' in the name. It's before the last number, not a parameter
-		#self.trained_parameters = [temp_image_names[0][i] for i in parameter_indexes]  # Get the parameters from the first image. Assumes all images have consistent parameters
-		#self.n_trained_parameters = len(self.trained_parameters)
 
 		# Build y values
 		print('Loading y:')
@@ -466,20 +455,7 @@ class ParameterModel:
 						value = temp_image_names[i_name][index_in_name + 2:index_end_name]
 						y[i_name, i_letter] = value
 
-
-
-		# # FIND IMAGE NAMES THAT AREN'T GIVING VALUES
-		# for i in range(len(temp_image_names)):
-		# 	if y[i, 0] == -100:
-		#		print('Value not assigned, name:', temp_image_names[i])
 		return x, y
-
-
-	# def get_image_dim(self, image_path):
-	# 	with Image.open(image_path) as image:
-	# 		width, height = image.size
-	# 	assert (width == height), 'Images should be square'
-	# 	self.image_dim = width
 
 
 	def get_image(self,path,model_to_create):
@@ -531,7 +507,6 @@ class ParameterModel:
 
 			self.model.summary(print_fn=lambda x: summary_file.write(x + '\n'))
 
-			# plot_model(self.model, to_file=os.path.join(self.results_dir, 'Model Plot.png'), show_shapes=True, show_layer_names=True)
 
 	def save_model_and_params(self):
 		self.model.save(os.path.join(self.results_dir, 'Model.h5'))
@@ -558,16 +533,6 @@ class ParameterModel:
 		print('Saving Test Results.csv:')
 		results = np.column_stack([self.test_names,self.y_test,self.test_predictions])
 		np.savetxt(os.path.join(self.results_dir, 'Test Results.csv'),results, delimiter=',', header="name,r_label,m_label,r_pred,m_pred", fmt='%s')
-
-		# output = np.zeros(names.size, dtype=[('name', 'U32'), ('r_label', float),('m_label',float),('r_pred', float),('m_pred',float)])
-		# output['name'] = names
-		# output['r_label'] = self.y_test[:,0:1].ravel()
-		# output['m_label'] = self.y_test[:,1:2].ravel()
-		# output['r_pred'] = self.test_predictions[:,0:1].ravel()
-		# output['m_pred'] = self.test_predictions[:,1:2].ravel()
-		# np.savetxt(os.path.join(self.results_dir, 'Test Results.csv'), output, delimiter=",", header="name,r_label,m_label,r_pred,m_pred", fmt="%10s %10.3f %10.3f %10.3f %10.3f", comments='')
-
-		#np.savetxt(os.path.join(self.results_dir, 'Test Results.csv'), np.hstack((self.test_predictions, self.y_test)), delimiter=',', header=(','.join(self.trained_parameters) + ',') * 2)
 
 		print('Calculating the Test Scores:')
 		test_scores = margin_metric(self.test_margin, self.test_predictions, self.y_test)
@@ -617,30 +582,58 @@ class ParameterModel:
 
 	def analyze(self,img_index,n_div):
 
-		self.model.compile(loss='mse',optimizer='adam')
+		# Visualize
+		print("Number of layers:",len(self.model.layers))
+		top_layer = self.model.layers[0]
+		print("First Layer Shape:",top_layer.get_weights()[0].shape)
+		n_filters = top_layer.get_weights()[0].shape[-1]
+		max =0
+		min =0
+		for i in range(n_filters):
+			#Visualize the filter weights
+			print("Saving Visualization Image for the ", i, "th filter in the first layer:")
+			image_name = "Layer1_" + str(i) +".tif"
+			save_path = os.path.join(self.results_dir,image_name)
+			plt.imsave(save_path, top_layer.get_weights()[0][:, :, :, i].squeeze(), cmap='gray')
 
-		# Visualize the weights
-		# print("Number of layers:",len(self.model.layers))
-		# top_layer = self.model.layers[0]
-		# print("First Layer Shape:",top_layer.get_weights()[0].shape)
-		# n_filters = top_layer.get_weights()[0].shape[-1]
-		# for i in range(n_filters):
-		# 	print("Saving Visualization Image for the ", i, "th filter in the first layer:")
-		# 	image_name = "Layer1_" + str(i) +".tif"
-		# 	save_path = os.path.join(self.results_dir,image_name)
-		# 	plt.imsave(save_path, top_layer.get_weights()[0][:, :, :, i].squeeze(), cmap='gray') #shows the first filter of first layer
-		#
-		# second_layer = self.model.layers[2]
-		# print("Second Layer Shape:",second_layer.get_weights()[0].shape)
+			#Visualize the filtered image output
+			layer11 = top_layer.get_weights()[0][:, :, :, i]
+			layer11.reshape((9,9))
+			input_image=np.zeros((207,207))
+			input_image[3:203,3:203]=self.x_test[0].reshape((200,200))
+			output_image=np.zeros((100,100))
+			for ii in range(100):
+				for jj in range(100):
+					output_image[ii][jj]=np.sum(np.multiply(layer11,input_image[ii*2:ii*2+9,jj*2:jj*2+9]))
 
-		layer_idx = utils.find_layer_idx(self.model, 'conv2d_1')
-		self.model.layers[layer_idx].activation = activations.linear
-		self.model = utils.apply_modifications(self.model)
-		filter_idx = 0
-		img = visualize_activation(self.model, layer_idx, filter_indices=filter_idx)
-		image_name = "Activation_Layer1_" + str(0) +".jpeg"
-		save_path = os.path.join(self.results_dir,image_name)
-		plt.imsave(save_path, img[...,0]) #shows the first filter of first layer
+			if(output_image.max()>max):
+				max=output_image.max()
+			if(output_image.min()<min):
+				min=output_image.min()
+			print("Output image value range:",output_image.min(),output_image.max())
+			output_image = output_image[:,:]*255
+			print("Output image after times 255 value range:",output_image.min(),output_image.max())
+			print("Output image after conversion value range:",np.uint8(output_image).min(),np.uint8(output_image).max())
+			print("Output image after conversion:",np.uint8(output_image)[0:10,1])
+
+			img = Image.fromarray(np.uint8(output_image))
+			file_path = os.path.join(self.results_dir,"layer1"+str(i)+"_activatedimage.tif")
+			img.save(file_path,"TIFF")
+
+		print("Max:",max)
+		print("Min:",min)
+
+		# NOT WORKING
+		# plt.rcParams['figure.figsize'] = (18, 6)
+		# layer_idx = utils.find_layer_idx(self.model, 'conv2d_4')
+		# print(layer_idx)
+		# self.model.layers[layer_idx].activation = activations.linear
+		# self.model = utils.apply_modifications(self.model)
+		# filter_idx = 1
+		# img = visualize_activation(self.model, layer_idx, filter_indices=filter_idx)
+		# image_name = "Activation_Layer1_" + str(0) +".jpeg"
+		# save_path = os.path.join(self.results_dir,image_name)
+		# plt.imsave(save_path, img[...,0])
 
 		self.test_predictions = self.model.predict(self.x_test, batch_size=self.batch_size)
 		np.clip(self.test_predictions, 0, 10, out=self.test_predictions)
@@ -663,25 +656,26 @@ class ParameterModel:
 		file_path = os.path.join(self.results_dir,self.image_names[img_index][:-4]+"_heatmap.tif")
 		img.save(file_path,"TIFF")
 
-		value_debugmap = self.analyze_pred
-		value_debugmap = value_debugmap[:,:]/value_debugmap[:,:].max()
-		value_debugmap = value_debugmap[:,:]*255
-		img = Image.fromarray(np.uint8(value_debugmap))
-		file_path = os.path.join(self.results_dir,self.image_names[img_index][:-4]+"valuemap.tif")
-		img.save(file_path,"TIFF")
+		# Output a heatmap for value and count array without the division step
+		# value_debugmap = self.analyze_pred
+		# value_debugmap = value_debugmap[:,:]/value_debugmap[:,:].max()
+		# value_debugmap = value_debugmap[:,:]*255
+		# img = Image.fromarray(np.uint8(value_debugmap))
+		# file_path = os.path.join(self.results_dir,self.image_names[img_index][:-4]+"valuemap.tif")
+		# img.save(file_path,"TIFF")
+		#
+		# count_debugmap = self.analyze_count
+		# print("Maximum count:",count_debugmap[:,:].max())
+		# print("First 10 values before:",count_debugmap[0,0:10])
+		# count_debugmap = count_debugmap[:,:]/count_debugmap[:,:].max()
+		# print("First 10 values after division by max:",count_debugmap[0,0:10])
+		# count_debugmap = count_debugmap[:,:]*255
+		# print("First 10 values after conversion:",np.uint8(count_debugmap)[0,0:10])
+		# img = Image.fromarray(np.uint8(count_debugmap))
+		# file_path = os.path.join(self.results_dir,self.image_names[img_index][:-4]+"countmap.tif")
+		# img.save(file_path,"TIFF")
 
-		count_debugmap = self.analyze_count
-		print("Maximum count:",count_debugmap[:,:].max())
-		print("First 10 values before:",count_debugmap[0,0:10])
-		count_debugmap = count_debugmap[:,:]/count_debugmap[:,:].max()
-		print("First 10 values after division by max:",count_debugmap[0,0:10])
-		count_debugmap = count_debugmap[:,:]*255
-		print("First 10 values after conversion:",np.uint8(count_debugmap)[0,0:10])
-
-		img = Image.fromarray(np.uint8(count_debugmap))
-		file_path = os.path.join(self.results_dir,self.image_names[img_index][:-4]+"countmap.tif")
-		img.save(file_path,"TIFF")
-
+		#Output a csv file comparing the overall image prediction and the average prediciton over the subimages
 		image_val = {}
 		analyze_prediction = np.asarray(self.test_predictions)
 		image_val["Image"]=self.image_names[img_index]
@@ -699,7 +693,6 @@ class ParameterModel:
 		y = int(y_coord)
 		analyze_prediction = np.asarray(self.test_predictions)
 		self.analyze_pred[y:y+self.image_dim,x:x+self.image_dim]+=analyze_prediction[index]
-		# self.analyze_pred[y:y+self.image_dim,x:x+self.image_dim]+=4
 
 	def plot_loss_history(self, history):
 		train_loss_history = history.history['loss']
