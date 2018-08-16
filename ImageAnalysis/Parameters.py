@@ -343,7 +343,10 @@ class ParameterModel:
 			crop_rectangle = (x_coord, y_coord, x_coord+self.image_dim, y_coord+self.image_dim)
 			cropped_im = image.crop(crop_rectangle)
 			image = np.array(cropped_im) / 255
-			image = image[:, :].reshape((self.image_dim, self.image_dim, 1)).astype(np.float32)
+			if image.shape == (200,200):
+				image = image[:, :].reshape((self.image_dim, self.image_dim, 1)).astype(np.float32)
+			else:
+				image = image[:, :, 0].reshape((self.image_dim, self.image_dim, 1)).astype(np.float32)
 			return image
 
 	def load_analyze_data(self, index, parameter, n_div, model_to_create):

@@ -17,13 +17,14 @@ import os,sys
 import argparse
 import ast
 import csv
+from PIL import Image
+from PIL.ImageQt import ImageQt
 from PyQt4 import QtGui,QtCore
 
-scaled_dim = 40 #the size of the image on the visulization window
-zoom_dim = 300 #the size when the mouse is over
+scaled_dim = 100 #the size of the image on the visulization window
+zoom_dim = 400 #the size when the mouse is over
 parser = argparse.ArgumentParser()
 parser.add_argument('directories', action='store', help='The directories to load images from',default=None)
-# parser.add_argument('-m', '--parameters', action='store', dest='parameters', default=None)
 parser.add_argument('-p', '--number of parameters', action='store', type=int, dest='n_parameters', default=1)
 parser.add_argument('-n', '--selection of parameter', action='store', type=int, dest='parameter', default=0)
 args = parser.parse_args()
@@ -35,7 +36,6 @@ class ImageButton(QtGui.QPushButton):
 
     def __init__(self,parent=None):
         super().__init__(parent)
-        # self.setMouseTracking(True)
         self.clicked.connect(self.enlarge)
 
     def enlarge(self):
@@ -47,7 +47,6 @@ class ImageButton(QtGui.QPushButton):
     def zoomout(self):
         self.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
         self.resize(scaled_dim,scaled_dim)
-        # pic.setGeometry(temp_x,temp_y,scaled_dim,scaled_dim)
         self.lower()
         self.clicked.connect(self.enlarge)
 
@@ -55,8 +54,8 @@ class ImageButton(QtGui.QPushButton):
 
 class Visualization(QtGui.QWidget):
 
-    width = 1000 #window size
-    height = 700
+    width = 2700 #window size
+    height = 1200
 
     FilePath = [] #list to store values extracted from the csv file
     value = []
@@ -72,9 +71,6 @@ class Visualization(QtGui.QWidget):
         self.setGeometry(0, 0, self.width, self.height)
         self.read_file(args.directories, args.n_parameters)
         self.add_images(args.n_parameters,args.parameter)
-        # shot_button = QtGui.QPushButton("Screenshot",self)
-        # shot_button.move(self.width/2,self.height/2)
-        # shot_button.clicked.connect(self.shoot)
         self.show()
 
 
@@ -109,7 +105,10 @@ class Visualization(QtGui.QWidget):
                     temp_x = float(self.value[0][i+1])*(self.width/self.max_value[0])-100
                     temp_y = float(self.value[1][i+1])*(self.height/self.max_value[1])
                     pic = ImageButton(self)
-                    pic.setIcon(QtGui.QIcon(os.path.join('Images',self.FilePath[i+1])))
+                    img = QtGui.QImage()
+                    with Image.open(os.path.join('Images',self.FilePath[i+1])) as image:
+                        img = ImageQt(image)
+                    pic.setIcon(QtGui.QIcon(img))
                     pic.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
                     pic.move(temp_x,self.height-temp_y)
                     pic.setStyleSheet('border: none')
@@ -130,18 +129,13 @@ class Visualization(QtGui.QWidget):
             elif(n_param == 1):
                     temp_x = float(self.value[0][i+1])*(self.width/self.max_value[0])
                     pic = ImageButton(self)
-                    pic.setIcon(QtGui.QIcon(os.path.join('Images',self.FilePath[i+1])))
+                    img = Image.open(os.path.join('Images',self.FilePath[i+1]))
+                    img = ImageQt(img)
+                    img = QtGui.QPixmap.fromImage(img)
+                    pic.setIcon(QtGui.QIcon(img)) #os.path.join('Images',self.FilePath[i+1])))
                     pic.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
                     pic.move(temp_x,self.height/2)
                     pic.setStyleSheet('border: none')
-
-
-    # def shoot(self):
-    #     p = QtGui.QPixmap.grabWidget(self,0,0,self.width,self.height)
-    #     filename =
-    #     p.save(filename, 'JPG')
-    #     print("shot taken")
-
 
 
 app = QtGui.QApplication(sys.argv)

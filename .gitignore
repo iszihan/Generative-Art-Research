@@ -24,8 +24,12 @@ Abstract-Feature-Extraction/719Predict_ctm200ep_rd_min
 Abstract-Feature-Extraction/718Train_ctm200ep_rd
 Abstract-Feature-Extraction/815Train_ctm200ep_rd
 Abstract-Feature-Extraction/815Predict_ctm200ep_rd
+Abstract-Feature-Extraction/Ignore
 
+Abstract-Feature-Extraction/Server_Vis
+Abstract-Feature-Extraction/ModelLog.xlsx
 
+Images
 
 
 ImageAnalysis/__pycache__
