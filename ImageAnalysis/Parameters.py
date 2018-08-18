@@ -51,7 +51,7 @@ def main():
 		if args.gpu_to_use == 0:
 			os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 			print('Using GPU:0');
-			print('Device used:', device_lib.list_local_devices())
+			# print('Device used:', device_lib.list_local_devices())
 
 			if args.run_id is None and args.model_to_load is None:  # The run will have a new folder created for it and it needs a new name
 				args.run_id = args.operation + ' ' + str(args.n_epochs) + ' epochs ' + 'from ' + os.path.basename(os.path.normpath(args.directories[0]))
@@ -65,7 +65,7 @@ def main():
 		elif args.gpu_to_use == 1:
 			os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 			print('Using GPU:1');
-			print('Device used:', device_lib.list_local_devices())
+			# print('Device used:', device_lib.list_local_devices())
 
 			if args.run_id is None and args.model_to_load is None:  # The run will have a new folder created for it and it needs a new name
 				args.run_id = args.operation + ' ' + str(args.n_epochs) + ' epochs ' + 'from ' + os.path.basename(os.path.normpath(args.directories[0]))
@@ -594,10 +594,10 @@ class ParameterModel:
 		min =0
 		for i in range(n_filters):
 			#Visualize the filter weights
-			print("Saving Visualization Image for the ", i, "th filter in the first layer:")
-			image_name = "Layer1_" + str(i) +".tif"
-			save_path = os.path.join(self.results_dir,image_name)
-			plt.imsave(save_path, top_layer.get_weights()[0][:, :, :, i].squeeze(), cmap='gray')
+			# print("Saving Visualization Image for the ", i, "th filter in the first layer:")
+			# image_name = "Layer1_" + str(i) +".tif"
+			# save_path = os.path.join(self.results_dir,image_name)
+			# plt.imsave(save_path, top_layer.get_weights()[0][:, :, :, i].squeeze(), cmap='gray')
 
 			#Visualize the filtered image output
 			layer11 = top_layer.get_weights()[0][:, :, :, i]

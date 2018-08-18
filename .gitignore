@@ -28,7 +28,7 @@ Abstract-Feature-Extraction/Ignore
 
 Abstract-Feature-Extraction/Server_Vis
 Abstract-Feature-Extraction/ModelLog.xlsx
-
+test_vis.py
 Images
 
 
@@ -38,6 +38,7 @@ ImageAnalysis/evoart_600
 ImageAnalysis/evoart_400
 ImageAnalysis/evoart_800
 ImageAnalysis/815Train_ctm200ep_rd
+ImageAnalysis/817Train_ctm200ep_rd
 ImageAnalysis/Analysis
 
 

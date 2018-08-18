@@ -1,6 +1,5 @@
 
 void setup() {
-
   size(500, 500);
   noLoop();
   ellipseMode(RADIUS);
@@ -9,35 +8,46 @@ void setup() {
 
 void draw() {
 
-  for (int iteration = 0; iteration<100; iteration++) {
+  for (int iteration = 0; iteration<25; iteration++) {
     for (int level = 9; level >= 0; level--) {
       for (int blur = 0; blur<=4; blur++) {
-        for(int noise=0; noise<=3; noise++){
-          // print("level:", level, "\n");
+        for(int noise=0; noise<=3; noise++){    
           float l = map(level, 9, 0, 1, 0.01);
-  
+
           clear();
           float back_col = random(0, 255);
-  
-          float stroke_col = random(0, 255);
-          while (stroke_col<back_col+50 && stroke_col > back_col-50) {
-            stroke_col = random(0, 255);
-          }
-  
           background(back_col);
+          
+          
           for (int x = 0; x<= 10; x++) {
-            noFill();
+            
+           
+            float stroke_col = random(0, 255);
+            while (stroke_col<back_col+70 && stroke_col > back_col-70) {
+              stroke_col = random(0, 255);
+            }
             stroke(stroke_col);
-            int rand1 = int(random(1,3));
-            float rand2 = random(0,1);
+            
+            noFill();
+            int rand1;
+            if(blur<=2){
+              rand1 = int(random(2,4));   
+            }
+            else{
+              rand1 = int(random(5,10));
+            }
             strokeWeight(rand1);
+
             float orig_x = 20;
             float orig_y = 20/l;
-            ellipse(width/2, height/2, orig_x+30*x*rand2, orig_y+30*x*rand2);
+            float rand2 = random(0.5,1);
+            ellipse(width/2, height/2, orig_x+50*x*rand2, orig_y+50*x*rand2);
+            
           }
+          
           PImage current = get();
           rotation(current);
-        
+
           for (int point = 0; point < noise*50; point++) {
             strokeWeight(2);
             stroke(random(0, 50), 20);

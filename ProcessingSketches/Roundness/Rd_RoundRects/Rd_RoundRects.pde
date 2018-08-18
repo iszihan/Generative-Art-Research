@@ -6,9 +6,7 @@ void setup() {
 }
 
 void randrect(float rad) {  
-  float r = random(180);
-  stroke(r);
-  fill(r);
+  
   float x = random(0, width);
   float y = random(0, height);
   float w = random(width/8, width/2);
@@ -23,34 +21,35 @@ void randrect(float rad) {
 }
 
 void draw() {
-  for (int iteration = 0; iteration < 166; iteration++) {
+  for (int iteration = 100; iteration < 166; iteration++) {
     for (int r=0; r<10; r++) {
       for (int blur = 0; blur <= 2; blur++) {
 
         clear();
         float back_col =random(0, 255);
         background(back_col);
-        if (r!=9) {
-          for (int i=0; i<random(2, 25); i++) {
-            float rad = r/9.0;
-            print("R level:", r, "rad:", rad, "\n");
-            randrect(rad);
+        for (int i=0; i<random(2, 25); i++) {
+          float col = random(0, 255);
+          while ( col < back_col+70 && col > back_col-70) {
+            col = random(0, 255);
           }
-        } else if (r==9) {
-          for (int i=0; i<random(2, 25); i++) {
+          noStroke();
+          fill(col);
+          
+          if (r!=9) {
+          float rad = r/9.0;
+          randrect(rad);
+          
+          } 
+          else if (r==9) {
             float radius = random(width/9, width/3);
             float x = random(20, width-20);
-            float y = random(20, height-20);
-            float col = random(0, 255);
-            while ( col < back_col+80 && col > back_col-80) {
-              col = random(0, 255);
-            }
-            noStroke();
-            fill(col);
+            float y = random(20, height-20);       
             ellipse(x, y, radius, radius);
           }
+        
         }
-
+        
         float b = blur;
         if (blur==2) {
           b = 1.5;
@@ -58,7 +57,7 @@ void draw() {
         PImage temp = get();
         temp.filter(BLUR, b);
 
-        String fname = String.format("Output/tri-r%02d-rr%03d%01d.png", r, iteration, blur);
+        String fname = String.format("Output/tri-r%02d-rr%03db%01d.png", r, iteration, blur);
         temp.save(fname);
       }
     }

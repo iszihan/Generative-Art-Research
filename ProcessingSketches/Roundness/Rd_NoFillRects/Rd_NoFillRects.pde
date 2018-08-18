@@ -6,11 +6,8 @@ void setup() {
   noLoop();
 }
 
-void randrect(float rad) {  
+void randrect(float rad) {
 
-  float r = random(180);
-  stroke(r);
-  strokeWeight(random(1, 4));
   float x = random(10, width-10);
   float y = random(10, height-10);
   float w = random(width/8, width/2);
@@ -33,23 +30,29 @@ void draw() {
         clear();
         float back_col = random(0, 255);
         background(back_col);
-        if (rad!=9) {
-          for (int i=0; i<random(2, 25); i++) {
+
+        for(int i=0; i<random(2,25);i++){
+          float r;
+          do {
+              r = random(0, 255);
+            } while ( r < back_col+70 && r > back_col-70);
+          stroke(r);
+          float wt;
+          if(blur<=2){
+            wt = random(2, 10);
+          }
+          else{
+            wt = random(5, 10);
+          }
+          strokeWeight(wt);
+
+          if (rad!=9) {
             randrect(rad);
           }
-        } else if (rad==9) {
-          for(int i=0; i<=int(random(1,25)); i++){
+          else if (rad==9) {
             float radius = random(width/8, width/2);
             float x = random(20, width-20);
             float y = random(20, height-20);
-            float r = random(0, 255);
-            while ( r < back_col+80 && r > back_col-80) {
-              r = random(0, 255);
-            }
-            stroke(r);
-            float wt = random(0, 10);
-            strokeWeight(wt);
-            noFill();
             ellipse(x, y, radius, radius);
           }
         }
@@ -59,8 +62,9 @@ void draw() {
         if (blur==2) {
           b = 1.5;
         }
+        
         temp.filter(BLUR, b);
-        String fname = String.format("Output/tri-r%02d-%03d%01d.png", rad, iteration, blur);
+        String fname = String.format("Output/tri-r%02d-%03db%01d.png", rad, iteration, blur);
         temp.save(fname);
       }
     }

@@ -6,7 +6,6 @@ int count = 0;
 
 void setup() {
   size(500, 500);
-
   for (int i =0; i <NUM_ANTS; i++) {
     ants.add(new Ant());
   }
@@ -18,14 +17,15 @@ void setup() {
 
 
 void draw() {
-  for (int iteration = 0; iteration < 166; iteration++) {
+  
+  for (int iteration = 100; iteration < 166; iteration++) {
     for (int i = 0; i < 10; i+=1) {
       for (int blur = 0; blur<=2; blur+=1){
         count++;
         float level = 10*i;
         background(0);
         noiseSeed(System.currentTimeMillis());
-        noiseDetail(6, level/100.0 + .001); // we need the .001 to mkae sure this doesn't go to zero
+        noiseDetail(6, level/100.0 + .001); // we need the .001 to make sure this doesn't go to zero
         for (Ant ant : ants) {
           for (int z = 0; z < ANT_ITERATIONS; z++) {
             ant.draw(.012);

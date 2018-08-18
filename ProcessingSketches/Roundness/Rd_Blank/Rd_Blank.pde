@@ -6,7 +6,7 @@ void setup(){
 }
 
 void draw(){
-  for (int itr = 0; itr<860; itr++){
+  for (int itr = 900; itr<1000; itr++){
     clear();
     float back_col = random(0,255);
     background(back_col);

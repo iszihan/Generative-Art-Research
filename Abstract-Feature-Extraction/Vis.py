@@ -17,12 +17,14 @@ import os,sys
 import argparse
 import ast
 import csv
+import numpy as np
 from PIL import Image
 from PIL.ImageQt import ImageQt
 from PyQt4 import QtGui,QtCore
 
-scaled_dim = 100 #the size of the image on the visulization window
+scaled_dim = 150 #the size of the image on the visulization window
 zoom_dim = 400 #the size when the mouse is over
+
 parser = argparse.ArgumentParser()
 parser.add_argument('directories', action='store', help='The directories to load images from',default=None)
 parser.add_argument('-p', '--number of parameters', action='store', type=int, dest='n_parameters', default=1)
@@ -51,93 +53,165 @@ class ImageButton(QtGui.QPushButton):
         self.clicked.connect(self.enlarge)
 
 
-
 class Visualization(QtGui.QWidget):
 
-    width = 2700 #window size
-    height = 1200
+    width = 0 #window size
+    height = 0
 
-    FilePath = [] #list to store values extracted from the csv file
-    value = []
+    data = []
+    values = []
+    images = []
 
-    max_value = [0.0,0.0]
-    min_value = [10.0,10.0]
-    range_value = [0.0,0.0]
+    def __init__(self,parent=None):
+        super().__init__(parent)
 
+        l=QtGui.QVBoxLayout(self)
+        l.setContentsMargins(0,0,0,0)
+        l.setSpacing(0)
 
-
-    def __init__(self):
-        super().__init__()
+        content = QtGui.QWidget(self)
+        if args.n_parameters==2 and args.parameter==0:
+            self.width=2500
+            self.height=1000
+        else:
+            self.width=2500
+            self.height=450
         self.setGeometry(0, 0, self.width, self.height)
-        self.read_file(args.directories, args.n_parameters)
-        self.add_images(args.n_parameters,args.parameter)
-        self.show()
+
+        self.read_file(args.directories, args.n_parameters, args.parameter)
+        self.add_images(args.n_parameters,args.parameter,content)
+        content.setGeometry(0, 0, self.width+400, self.height+400)
+
+        s = QtGui.QScrollArea()
+        l.addWidget(s)
+
+        s.setWidget(content)
 
 
 
-    def read_file(self,dir,n_param):
+    def read_file(self,dir,n_param,param):
         f = open(os.path.join(dir,'PredictResults.csv'),'r')
-        has_header = csv.Sniffer().has_header(f.readline())
         readFile = csv.reader(f)
-        if has_header:
-            next(readFile)
-        for row in readFile: #read the csv file
-            self.FilePath.append(row[0])
+        header = next(readFile)
+        print("Header:",header)
+        for row in readFile: #read the csv file from the second row
+            single_row = []
+            single_row.append(row[0])
             for i in range(n_param):
-                self.value.append([])
-                self.value[i].append(row[i+1])
-                if(float(row[i+1])>self.max_value[i]):
-                    self.max_value[i] = float(row[i+1])
-                if(float(row[i+1])<self.min_value[i]):
-                    self.min_value[i] = float(row[i+1])
+                single_row.append(float(row[i+1]))
+            self.data.append(single_row)
 
-        print("max:",self.max_value)
-        print("min:",self.min_value)
-        for i in range(len(self.max_value)):
-            self.range_value[i] = self.max_value[i]-self.min_value[i]
-        print("range:",self.range_value)
+        self.data = np.asarray(self.data)
+        #single parameter to visualize
+        if n_param == 2 and param != 0:
+            print("Which parameter:",header[param][0])
+            title = "Loaded from '"+ args.directories+"' for parameter "+header[param][0]
+            self.setWindowTitle(title)
+            self.data = self.data[self.data[:,param].argsort()]
 
-    def add_images(self,n_param,param):
-        for i in range(len(self.FilePath)-1):
-            print(self.FilePath[i+1])
+            self.values = self.data[:,param].astype(np.float)
+            self.images = self.data[:,0]
+            self.images = self.images[self.values.argsort()]
+            self.values = self.values[self.values.argsort()]
+
+        elif n_param==1:
+            print("Which parameter:",header[1][0])
+            title = "Loaded from '"+ args.directories+"' for parameter "+header[1][0]
+            self.setWindowTitle(title)
+
+            self.values = self.data[:,1].astype(np.float)
+            self.images = self.data[:,0]
+            self.images = self.images[self.values.argsort()]
+            self.values = self.values[self.values.argsort()]
+
+        #two parameters to visualize
+        elif n_param==2 and param==0:
+            print("Which parameter:",header[1][0],header[2][0])
+            title = "Loaded from '"+ args.directories+"' for parameter "+header[1][0]+"(x-axis) and "+header[2][0]+"(y-axis)"
+            self.setWindowTitle(title)
+            self.values = self.data[:,1:3].astype(np.float)
+            self.images = self.data[:,0]
+            self.images = self.images[self.values[:,0].argsort()]
+            self.values = self.values[self.values[:,0].argsort()]
+
+
+
+
+    def add_images(self,n_param,param,content):
+        prev_x = 0
+        curr_x = 0
+
+        for i in range(len(self.data)):
             if(n_param == 2):
+                #two parameter visualization
                 if(param==0):
-                    temp_x = float(self.value[0][i+1])*(self.width/self.max_value[0])-100
-                    temp_y = float(self.value[1][i+1])*(self.height/self.max_value[1])
-                    pic = ImageButton(self)
-                    img = QtGui.QImage()
-                    with Image.open(os.path.join('Images',self.FilePath[i+1])) as image:
-                        img = ImageQt(image)
-                    pic.setIcon(QtGui.QIcon(img))
-                    pic.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
-                    pic.move(temp_x,self.height-temp_y)
-                    pic.setStyleSheet('border: none')
-                elif(param==1):
-                    temp_x = float(self.value[0][i+1])*(self.width/self.max_value[0])
-                    pic = ImageButton(self)
-                    pic.setIcon(QtGui.QIcon(os.path.join('Images',self.FilePath[i+1])))
-                    pic.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
-                    pic.move(temp_x,self.height/2)
-                    pic.setStyleSheet('border: none')
-                elif(param==2):
-                    temp_x = float(self.value[1][i+1])*(self.width/self.max_value[1])
-                    pic = ImageButton(self)
-                    pic.setIcon(QtGui.QIcon(os.path.join('Images',self.FilePath[i+1])))
-                    pic.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
-                    pic.move(temp_x,self.height/2)
-                    pic.setStyleSheet('border: none')
-            elif(n_param == 1):
-                    temp_x = float(self.value[0][i+1])*(self.width/self.max_value[0])
-                    pic = ImageButton(self)
-                    img = Image.open(os.path.join('Images',self.FilePath[i+1]))
+                    if i==0:
+                        curr_x = self.values[i,0]*(2000/11)
+                    else:
+                        curr_x = prev_x+scaled_dim+(self.values[i,0]-self.values[i-1,0])*(2000/11) #Avoid overlapping
+                    curr_y = float(self.values[i,1])*(self.height/self.values[:,1].max())
+
+                    pic = ImageButton(content)
+                    labelx="x="+str(self.values[i,0])
+                    labely="y="+str(self.values[i,1])
+                    pred_x = QtGui.QLabel(labelx,content) #To show the numerical prediction
+                    pred_y = QtGui.QLabel(labely,content)
+                    img = Image.open(os.path.join('Images',self.images[i]))
                     img = ImageQt(img)
                     img = QtGui.QPixmap.fromImage(img)
-                    pic.setIcon(QtGui.QIcon(img)) #os.path.join('Images',self.FilePath[i+1])))
+                    pic.setIcon(QtGui.QIcon(img))
                     pic.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
-                    pic.move(temp_x,self.height/2)
+
+                    pic.move(curr_x,self.height-curr_y)
+                    pred_x.move(curr_x,self.height-curr_y-24)
+                    pred_y.move(curr_x,self.height-curr_y-12)
                     pic.setStyleSheet('border: none')
+
+                    prev_x = curr_x #remember the preivous image's coordiante
+
+                #single parameter visualization
+                elif(param==1 or param==2): #first parameter
+                    if i==0:
+                        curr_x = self.values[i]*(2000/11)
+                    else:
+                        curr_x = prev_x+scaled_dim+(self.values[i]-self.values[i-1])*(2000/11) #Avoid overlapping
+                    pic = ImageButton(content)
+                    pred = QtGui.QLabel(str(self.values[i]),content) #To show the numerical prediction
+                    img = Image.open(os.path.join('Images',self.images[i]))
+                    img = ImageQt(img)
+                    img = QtGui.QPixmap.fromImage(img)
+                    pic.setIcon(QtGui.QIcon(img))
+                    pic.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
+                    pic.move(curr_x,50)
+                    pred.move(curr_x,38)
+                    pic.setStyleSheet('border: none')
+                    prev_x = curr_x
+
+
+            #single parameter visualization
+            elif(n_param == 1):
+                    if i==0:
+                        curr_x = self.values[i]*(2000/11)
+                    else:
+                        curr_x = prev_x+scaled_dim+(self.values[i]-self.values[i-1])*(2000/11)#Avoid overlapping
+                    pic = ImageButton(content)
+                    pred = QtGui.QLabel(str(self.values[i]),content)#To show the numerical prediction
+                    img = Image.open(os.path.join('Images',self.images[i]))
+                    img = ImageQt(img)
+                    img = QtGui.QPixmap.fromImage(img)
+                    pic.setIcon(QtGui.QIcon(img))
+                    pic.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
+                    pic.move(curr_x,50)
+                    pic.setStyleSheet('border: none')
+                    pred.move(curr_x,38)
+                    prev_x = curr_x
+
+            self.width = prev_x #set the scrollable widget width to be the x-coordinate of the last-added image, i.e. the image with the max parameter value
+
 
 
 app = QtGui.QApplication(sys.argv)
 window = Visualization()
+window.show()
+window.raise_()
 sys.exit(app.exec_())
