@@ -34,7 +34,7 @@ void draw() {
               rand1 = int(random(2,4));   
             }
             else{
-              rand1 = int(random(5,10));
+              rand1 = int(random(8,20));
             }
             strokeWeight(rand1);
 

@@ -20,6 +20,11 @@ from PIL import Image
 import json
 from tensorflow.python.client import device_lib
 import tensorflow as tf
+from numpy.random import seed
+seed(1)
+from tensorflow import set_random_seed
+set_random_seed(2)
+
 
 
 def main():
@@ -42,10 +47,10 @@ def main():
 
 	if args.operation == 'train':
 		print('Train Operation')
-		if args.gpu_to_use == 0:
+		if args.gpu_to_use == 2:
 			#Choose which GPU to use
-			os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-			print('Using GPU:0');
+			os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+			print('Using GPU:2');
 			# print('Device used:', device_lib.list_local_devices())
 
 			if args.run_id is None and args.model_to_load is None:  # The run will have a new folder created for it and it needs a new name
@@ -87,6 +92,7 @@ def main():
 
 	elif args.operation == 'test':
 		print('Test Operation')
+		os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 		#Test operation has to provide a model
 		if args.model_to_load is None:

@@ -22,8 +22,9 @@ from PIL import Image
 from PIL.ImageQt import ImageQt
 from PyQt4 import QtGui,QtCore
 
-scaled_dim = 150 #the size of the image on the visulization window
-zoom_dim = 400 #the size when the mouse is over
+SCREEN_WIDTH = 7500
+SCALED_DIM = 50 #the size of the image on the visulization window
+ZOOM_DIM = 400 #the size when the mouse is over
 
 parser = argparse.ArgumentParser()
 parser.add_argument('directories', action='store', help='The directories to load images from',default=None)
@@ -41,14 +42,14 @@ class ImageButton(QtGui.QPushButton):
         self.clicked.connect(self.enlarge)
 
     def enlarge(self):
-        self.setIconSize(QtCore.QSize(zoom_dim,zoom_dim))
-        self.resize(zoom_dim,zoom_dim)
+        self.setIconSize(QtCore.QSize(ZOOM_DIM,ZOOM_DIM))
+        self.resize(ZOOM_DIM,ZOOM_DIM)
         self.raise_()
         self.clicked.connect(self.zoomout)
 
     def zoomout(self):
-        self.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
-        self.resize(scaled_dim,scaled_dim)
+        self.setIconSize(QtCore.QSize(SCALED_DIM,SCALED_DIM))
+        self.resize(SCALED_DIM,SCALED_DIM)
         self.lower()
         self.clicked.connect(self.enlarge)
 
@@ -121,6 +122,10 @@ class Visualization(QtGui.QWidget):
 
             self.values = self.data[:,1].astype(np.float)
             self.images = self.data[:,0]
+            val_min = self.values.min()
+            val_max = self.values.max()
+            self.values = self.values - val_min
+            self.values = self.values / (val_max-val_min)
             self.images = self.images[self.values.argsort()]
             self.values = self.values[self.values.argsort()]
 
@@ -140,6 +145,7 @@ class Visualization(QtGui.QWidget):
     def add_images(self,n_param,param,content):
         prev_x = 0
         curr_x = 0
+        curr_y = 0
 
         for i in range(len(self.data)):
             if(n_param == 2):
@@ -148,7 +154,7 @@ class Visualization(QtGui.QWidget):
                     if i==0:
                         curr_x = self.values[i,0]*(2000/11)
                     else:
-                        curr_x = prev_x+scaled_dim+(self.values[i,0]-self.values[i-1,0])*(2000/11) #Avoid overlapping
+                        curr_x = prev_x+SCALED_DIM+(self.values[i,0]-self.values[i-1,0])*(2000/11) #Avoid overlapping
                     curr_y = float(self.values[i,1])*(self.height/self.values[:,1].max())
 
                     pic = ImageButton(content)
@@ -160,7 +166,7 @@ class Visualization(QtGui.QWidget):
                     img = ImageQt(img)
                     img = QtGui.QPixmap.fromImage(img)
                     pic.setIcon(QtGui.QIcon(img))
-                    pic.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
+                    pic.setIconSize(QtCore.QSize(SCALED_DIM,SCALED_DIM))
 
                     pic.move(curr_x,self.height-curr_y)
                     pred_x.move(curr_x,self.height-curr_y-24)
@@ -174,14 +180,14 @@ class Visualization(QtGui.QWidget):
                     if i==0:
                         curr_x = self.values[i]*(2000/11)
                     else:
-                        curr_x = prev_x+scaled_dim+(self.values[i]-self.values[i-1])*(2000/11) #Avoid overlapping
+                        curr_x = prev_x+SCALED_DIM+(self.values[i]-self.values[i-1])*(2000/11) #Avoid overlapping
                     pic = ImageButton(content)
                     pred = QtGui.QLabel(str(self.values[i]),content) #To show the numerical prediction
                     img = Image.open(os.path.join('Images',self.images[i]))
                     img = ImageQt(img)
                     img = QtGui.QPixmap.fromImage(img)
                     pic.setIcon(QtGui.QIcon(img))
-                    pic.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
+                    pic.setIconSize(QtCore.QSize(SCALED_DIM,SCALED_DIM))
                     pic.move(curr_x,50)
                     pred.move(curr_x,38)
                     pic.setStyleSheet('border: none')
@@ -190,21 +196,29 @@ class Visualization(QtGui.QWidget):
 
             #single parameter visualization
             elif(n_param == 1):
-                    if i==0:
-                        curr_x = 10 #self.values[i]*(2000/11)
+                    # if i==0:
+                    #     curr_x = 10 #self.values[i]*(2000/11)
+                    # else:
+                    #     curr_x = prev_x+SCALED_DIM+(self.values[i]-self.values[i-1])*(2000/11) #Avoid overlapping
+                    curr_x = self.values[i]*SCREEN_WIDTH
+
+                    if i > 0 and curr_x-prev_x < SCALED_DIM:
+                        curr_y += SCALED_DIM+20
+
                     else:
-                        curr_x = prev_x+scaled_dim+(self.values[i]-self.values[i-1])*(2000/11) #Avoid overlapping
+                        curr_y = 0
+                        prev_x = curr_x
                     pic = ImageButton(content)
-                    pred = QtGui.QLabel(str(self.values[i]),content) #To show the numerical prediction
+                    pred = QtGui.QLabel(str(self.values[i])[0:8],content) #To show the numerical prediction
                     img = Image.open(os.path.join('Images',self.images[i]))
                     img = ImageQt(img)
                     img = QtGui.QPixmap.fromImage(img)
                     pic.setIcon(QtGui.QIcon(img))
-                    pic.setIconSize(QtCore.QSize(scaled_dim,scaled_dim))
-                    pic.move(curr_x,50)
+                    pic.setIconSize(QtCore.QSize(SCALED_DIM,SCALED_DIM))
+                    pic.move(curr_x,curr_y+50)
                     pic.setStyleSheet('border: none')
-                    pred.move(curr_x,38)
-                    prev_x = curr_x
+                    pred.move(curr_x,curr_y+38)
+                    # prev_x = curr_x
 
             self.width = prev_x #set the scrollable widget width to be the x-coordinate of the last-added image, i.e. the image with the max parameter value
 

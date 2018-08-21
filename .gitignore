@@ -16,18 +16,9 @@ Abstract-Feature-Extraction/Images/
 Abstract-Feature-Extraction/__pycache__/
 Abstract-Feature-Extraction/.idea/
 Abstract-Feature-Extraction/PreviousTraining/
-Abstract-Feature-Extraction/718Train_ctm100ep_rd
-Abstract-Feature-Extraction/717Train_vgg100ep_rd
-Abstract-Feature-Extraction/717Predict_vgg100ep_rd
-Abstract-Feature-Extraction/719Predict_ctm200ep_rd
-Abstract-Feature-Extraction/719Predict_ctm200ep_rd_min
-Abstract-Feature-Extraction/718Train_ctm200ep_rd
-Abstract-Feature-Extraction/815Train_ctm200ep_rd
-Abstract-Feature-Extraction/815Predict_ctm200ep_rd
-Abstract-Feature-Extraction/Ignore
+Abstract-Feature-Extraction/IgnoreForGithub
 
 Abstract-Feature-Extraction/Server_Vis
-Abstract-Feature-Extraction/ModelLog.xlsx
 test_vis.py
 Images
 
