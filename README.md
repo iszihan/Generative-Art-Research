@@ -68,7 +68,7 @@ Run the python file Parameters.py like this:
 - **PARAMETER (-m):** Parameters for analysis
 - **N_DIVISION (-D):** Number of smaller parts you wish to divide the input image on single axis (x or y) for further analysis.
 
-## How to Spatialize the input images (Use Vis.py in the Abstract-Feature-Extraction folder)
+## How to Spatialize the input images (Use Vis.py or Vis_Normalized.py in the Abstract-Feature-Extraction folder)
 1. Install PyQt4 by 'conda install pyqt=4'
 2. Run Parameters.py's Predict function first (See ReadMe.md) for targeted images, and save the result folder in the same directory as Vis.py.
 3. Run this applet like below:
